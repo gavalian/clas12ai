@@ -1,0 +1,25 @@
+Project timeline:
+
+october 1:
+Finalize training and testing procedures. Implement validation procedure
+to validate test sample, where accuracy of the network is determined from
+sample of N candidates.
+
+december 1:
+provide software (probably in docker container) that will accept training
+set as an input and produce a trained neural network. Provide software
+that can evaluate track candidates and return sorted list ordered by goodness
+probability. First draft version can be in python.
+
+by end of year:
+Have the software runnable, and implement in the current workflow for
+our detector reconstruction.
+
+starting early January:
+start investigating RNNs, divide training sample into three regions,
+each 12 entries in the training sample represent one input. They should
+predict what next 12 states will be, and based on 24 entries predict what
+next 12 should be. Investigate networks that can provide best accuracy.
+
+depending on progress (sometime in March) start implementing software that
+can automate the process of training and prediction.
