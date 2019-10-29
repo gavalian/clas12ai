@@ -1,33 +1,57 @@
+//#####################################################
+//# example c-code for reading samples and passing them
+//# to python script to be evaluated and returning
+//# results to the c program for further processing.
+//# author: gavalian (2019)
+//#####################################################
+
 #include <stdlib.h>
+#include <stdio.h>
 #define ARRAY_SIZE 100*4032
 
-extern void get_array_size(int* rows,int* cols);
 
-// Returns the number of rows and columns of the data array in rows and cols variables
-void get_array_size(int* rows,int* cols)
-{
-    (*rows) = 100;
-    (*cols) = 4032;
+
+extern "C" {
+  void  open_file(const char *filename);
+  int   read_next();
+  int   count_roads( int banch);
+  void  read_roads ( double *roads, int nroads, int banch);
+  void  write_roads( double *roads_results, int nroads, int banch);
 }
 
-extern double* read_data();
-
-
-
-// Returns the data array could be two-dimensional also
-double* read_data()
-{
-    double* data = (double*)malloc(sizeof(double)*ARRAY_SIZE); 
-    for(int i=0;i<ARRAY_SIZE;i++)
-    {
-        data[i] = i;
-    }
-
-    return data;
+//====================================================
+//= This routine will open given file to provide
+//= samples of track candidates to the routines.
+//====================================================
+void open_file(const char *filename){
+  printf("---> some file was opened with name : %s\n",filename);
+}
+//========================================================
+//= Read next bunch of track candidates and return
+//= the number of candidates that were read.
+//= if end of file war reached, return value will be -1
+//= otherwise number of bunches is returned (0 is also
+//= valid return value).
+//========================================================
+int read_next(){
+  return rand()%6+3;
 }
 
-// Helper function to free the allocated memory from Python when done with the data
-void release_data(double* data)
-{
-    free(data);
+int count_roads(int banch){
+  return rand()%3+4;
+}
+
+void  read_roads ( double *roads, int nroads, int banch){
+  int nfeatures = 6;
+  for(int i = 0; i < nroads*nfeatures; i++){
+    roads[i] = rand()/RAND_MAX;
+  }
+}
+
+void  write_roads( double *roads_results, int nroads, int banch){
+  printf("banch %5d : results = ",banch);
+  for(int i = 0; i < nroads; i++){
+    printf(" %6.3f ",roads_results[i]);
+  }
+  printf("\n");
 }
