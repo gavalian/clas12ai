@@ -44,7 +44,7 @@ int count_roads(int banch){
 void  read_roads ( double *roads, int nroads, int banch){
   int nfeatures = 6;
   for(int i = 0; i < nroads*nfeatures; i++){
-    roads[i] = rand()/RAND_MAX;
+    roads[i] = ((double)rand())/RAND_MAX;
   }
 }
 
