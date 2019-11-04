@@ -40,8 +40,8 @@ def parse_arguments():
     parser_train._action_groups.pop()
     parser_train_required_args = parser_train.add_argument_group("Required arguments")
     parser_train_optional_args = parser_train.add_argument_group("Optional arguments")
-    parser_train_required_args.add_argument("--training-dir", "-t", required=True, help="Path to the directory containing the training data.", dest="training_dir_path")
-    parser_train_required_args.add_argument("--testing-dir", "-e", required=True, help="Path to the directory containing the testing data.", dest="testing_dir_path")
+    parser_train_required_args.add_argument("--training-file", "-t", required=True, help="Path to the file containing the training data.", dest="training_file_path")
+    parser_train_required_args.add_argument("--testing-file", "-e", required=True, help="Path to the file containing the testing data.", dest="testing_file_path")
     parser_train_required_args.add_argument("--num-features", "-f", choices=["6", "36", "4032"], required=True, help="Path to the directory containing the testing data.", dest="num_features")
     parser_train_required_args.add_argument("--out-model", "-m", required=True, help="Name of the file in which to save the model.", dest="output_model_path")
     parser_train_required_args.add_argument("--model-type", choices=["cnn", "mlp", "et"], required=True, help="The type of the model to train.", dest="model_type")
@@ -56,7 +56,7 @@ def parse_arguments():
     parser_test._action_groups.pop()
     parser_test_required_args = parser_test.add_argument_group("Required arguments")
     parser_test_optional_args = parser_test.add_argument_group("Optional arguments")
-    parser_test_required_args.add_argument("--testing-dir", "-e", required=True, help="Path to the directory containing the testing data.", dest="testing_dir_path")
+    parser_test_required_args.add_argument("--testing-file", "-e", required=True, help="Path to the file containing the testing data.", dest="testing_file_path")
     parser_test_required_args.add_argument("--num-features", "-f", choices=["6", "36", "4032"], required=True, help="Path to the directory containing the testing data.", dest="num_features")
     parser_test_required_args.add_argument("--model", "-m", required=True, help="The name of the file from which to load the model.", dest="model_path")
     parser_test_required_args.add_argument("--model-type", choices=["cnn", "mlp", "et"], required=True, help="The type of the model to load.", dest="model_type")
@@ -64,15 +64,16 @@ def parse_arguments():
 
     # TODO disable predict until we learn about the C interface
     # Create prediction subprogram parser
-    #parser_predict = subparsers.add_parser("predict", help="Load a model and use it for predictions.")
-    #parser_predict._action_groups.pop()
-    #parser_predict_required_args = parser_predict.add_argument_group("Required arguments")
-    #parser_predict_optional_args = parser_predict.add_argument_group("Optional arguments")
-    #parser_predict_required_args.add_argument("--prediction-dir", "-p", required=True, help="Path to the directory containing the prediction data.", dest="prediction_dir_path")
-    #parser_predict_required_args.add_argument("--prediction-output-file", "-o", required=True, help="File in which to save the predictions.", dest="prediction_output_file")
-    #parser_predict_required_args.add_argument("--model", "-m", required=True, help="The name of the file from which to load the model.", dest="model_path")
-    #parser_predict_required_args.add_argument("--model-type", choices=["cnn", "mlp", "et"], required=True, help="The type of the model to load.", dest="model_type")
-    #parser_predict_optional_args.add_argument("--batchSize", required=False, type=int, default="32", help="Size of the prediction batch.", dest="prediction_batch_size")
+    parser_predict = subparsers.add_parser("predict", help="Load a model and use it for predictions.")
+    parser_predict._action_groups.pop()
+    parser_predict_required_args = parser_predict.add_argument_group("Required arguments")
+    parser_predict_optional_args = parser_predict.add_argument_group("Optional arguments")
+    parser_predict_required_args.add_argument("--prediction-file", "-p", required=True, help="Path to the file containing the prediction data.", dest="prediction_file_path")
+    # parser_predict_required_args.add_argument("--prediction-output-file", "-o", required=True, help="File in which to save the predictions.", dest="prediction_output_file")
+    parser_predict_required_args.add_argument("--model", "-m", required=True, help="The name of the file from which to load the model.", dest="model_path")
+    parser_predict_required_args.add_argument("--model-type", choices=["cnn", "mlp", "et"], required=True, help="The type of the model to load.", dest="model_type")
+    parser_predict_optional_args.add_argument("--batchSize", required=False, type=int, default="32", help="Size of the prediction batch.", dest="prediction_batch_size")
+    parser_predict_optional_args.add_argument("--c-lib", required=False, default="libc_reader.so", help="Path to the C library reader interface", dest="c_library")
 
     return parser.parse_args()
 
@@ -94,11 +95,8 @@ def read_input_data(input_type, args) -> dict:
 
     if input_type == "train":
         # Read training and testing data
-        training_dir_filenames = enumerate_data_files_in_dir(args.training_dir_path)
-        testing_dir_filenames = enumerate_data_files_in_dir(args.testing_dir_path)
-
-        X_train, y_train = read_concat_svm_files(training_dir_filenames, int(args.num_features))
-        X_test, y_test = read_concat_svm_files(testing_dir_filenames, int(args.num_features))
+        X_train, y_train = read_concat_svm_files([args.training_file_path], int(args.num_features))
+        X_test, y_test = read_concat_svm_files([args.testing_file_path], int(args.num_features))
 
         X_test_segmented, y_test_segmented = segment_svm_data(X_test, y_test)
         total_test_samples = len(y_test_segmented)
@@ -112,9 +110,7 @@ def read_input_data(input_type, args) -> dict:
 
     elif input_type == "test":
         # Read testing data
-        testing_dir_filenames = enumerate_data_files_in_dir(args.testing_dir_path)
-
-        X_test, y_test = read_concat_svm_files(testing_dir_filenames, int(args.num_features))
+        X_test, y_test = read_concat_svm_files([args.testing_file_path], int(args.num_features))
 
         X_test_segmented, y_test_segmented = segment_svm_data(X_test, y_test)
 
@@ -222,6 +218,8 @@ def test_model(args):
 
 # TODO implement
 def predict(args):
+    from c_py_interface.c_interface import CLibInterface
+
     if (args.model_type == "et"):
         model = ExtraTreesModel()
     elif (args.model_type == "mlp"):
@@ -231,8 +229,29 @@ def predict(args):
 
     model.load_model(args.model_path)
 
+    clib = CLibInterface(args.c_library)
+    clib.open_file(args.prediction_file_path)
+    
+    dict_input = {}
+    
+    dict_input['prediction'] = {}
+    
+    while(True):
+        N = clib.read_next()
+
+        if (N < 0):
+            break
+
+        for i in range(0,N):
+            k = clib.count_roads(i)
+            roads = clib.read_roads(k,i)
+            dict_input['prediction']['data'] = roads
+            pred = model.predict(dict_input)
+            preds = pred['predictions']
+            clib.write_roads(preds,i)
+
     # TODO continue implementation
-    raise NotImplementedError
+    # raise NotImplementedError
 
 def get_subroutine(args):
     """

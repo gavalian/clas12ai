@@ -18,3 +18,6 @@ class MlpModel(AbstractScikitLearnClassifier):
     def test(self, input_dict) -> dict:
         print(colored("Testing MLP model...", "green"))
         return super().test(input_dict)
+
+    def predict(self, input_dict) -> dict:
+        return super().predict(input_dict)

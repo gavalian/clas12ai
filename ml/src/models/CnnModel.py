@@ -15,6 +15,10 @@ class CnnModel(AbstractKerasClassifier):
         self.preprocess_input(kwargs['in_dict'])
         self.model = None
 
+    def __init__(self):
+        super().__init__()
+        self.model = None
+
     def build_new_model(self):
         k_model = Sequential()
         k_model.add(Conv2D(32, kernel_size=(3, 3),activation='linear',padding='same',input_shape=(36,112,1)))
@@ -71,3 +75,11 @@ class CnnModel(AbstractKerasClassifier):
     def test(self, input_dict) -> dict:
         print(colored("Testing CNN model...", "green"))
         return super().test(input_dict)
+
+    def predict(self, input_dict) -> dict:
+        data = input_dict['prediction']['data'] 
+        if (data.shape[-1] != 112 or data.shape[-2] != 36):
+            data = data.reshape(-1,36,112,1)
+        input_dict['prediction']['data'] = data
+        
+        return super().predict(input_dict)

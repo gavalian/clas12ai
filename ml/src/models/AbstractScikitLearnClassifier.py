@@ -1,6 +1,7 @@
 from timeit import default_timer as timer
 from sklearn.metrics import confusion_matrix
 from termcolor import colored
+from sklearn.discriminant_analysis import softmax
 import pickle
 
 from models.AbstractModel import AbstractModel
@@ -89,12 +90,21 @@ class AbstractScikitLearnClassifier(AbstractModel):
         output_dict = {
             "accuracy_testing": accuracy_testing, 
             "testing_prediction_time": testing_prediction_time, 
-            "confusion_matrix": conf_matrix
+            "confusion_matrix": conf_matrix,
+            "prediction_matrix": y_pred_proba
         }
         output_dict.update(accuracy_metrics_dict)
 
         return output_dict
 
     # TODO implement
-    def predict(self):
-        None
+    def predict(self, input_dict)  -> dict:
+        X = input_dict["prediction"]["data"]
+        y_pred_proba = self.model.predict_proba(X)
+        y_valid = y_pred_proba[:,1].reshape(1,-1)
+
+        output_dict = {
+            "predictions": softmax(y_valid,copy=False)[0]
+        }
+
+        return output_dict

@@ -36,5 +36,5 @@ class AbstractModel(ABC):
 
     # TODO finalize prototype
     @abstractmethod
-    def predict(self):
+    def predict(self, input_dict) -> dict:
         raise NotImplementedError
