@@ -101,10 +101,16 @@ class AbstractScikitLearnClassifier(AbstractModel):
     def predict(self, input_dict)  -> dict:
         X = input_dict["prediction"]["data"]
         y_pred_proba = self.model.predict_proba(X)
-        y_valid = y_pred_proba[:,1].reshape(1,-1)
+        y_valid = y_pred_proba[:,1]
 
-        output_dict = {
-            "predictions": softmax(y_valid,copy=False)[0]
-        }
+        if (input_dict['softmax']):
+            output_dict = {
+                "predictions": softmax(y_valid.reshape(1,-1),copy=False)[0]
+            }
+        else:
+            output_dict = {
+                "predictions": y_valid
+            }
+
 
         return output_dict

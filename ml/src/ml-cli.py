@@ -74,6 +74,7 @@ def parse_arguments():
     parser_predict_required_args.add_argument("--model-type", choices=["cnn", "mlp", "et"], required=True, help="The type of the model to load.", dest="model_type")
     parser_predict_optional_args.add_argument("--batchSize", required=False, type=int, default="32", help="Size of the prediction batch.", dest="prediction_batch_size")
     parser_predict_optional_args.add_argument("--c-lib", required=False, default="libc_reader.so", help="Path to the C library reader interface", dest="c_library")
+    parser_predict_optional_args.add_argument("--softmax", "-s", action='store_true', help="Use this flag to pass the output probabilities from softmax before returning them", dest="use_softmax_output")
 
     return parser.parse_args()
 
@@ -233,7 +234,7 @@ def predict(args):
     clib.open_file(args.prediction_file_path)
     
     dict_input = {}
-    
+    dict_input['softmax'] = args.use_softmax_output
     dict_input['prediction'] = {}
     
     while(True):
