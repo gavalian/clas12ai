@@ -45,12 +45,15 @@ void open_file(const char *filename){
 //========================================================
 int read_next(){
   bool status = reader.next();
+
   if(status==false) return -1;
+
   reader.read(event);
   event.getStructure(*hitsBank);
   analyzer.readClusters(*hitsBank,1);
   analyzer.makeTracks();
   int ntracks = analyzer.getNtracks();
+
   return 1;
 }
 
@@ -78,5 +81,19 @@ void  write_roads( double *roads_results, int nroads, int banch){
   for(int i = 0; i < nroads; i++){
     printf("%8.4f ",roads_results[i]);
   }
-  printf("\n");
+  double  max = 0.0;
+  double summ = 0.0;
+
+  for(int i = 0; i < nroads; i++){
+    double value = roads_results[i];
+    if(value>max) max = value;
+    summ += value;
+  }
+  int counter = 0;
+  double average = summ/nroads;
+  for(int i = 0; i < nroads; i++){
+    double value = roads_results[i];
+    if(value>average) counter++;
+  }
+  printf("\n Max = %8.5f, Average = %8.5f, Counter = %8d\n",max,summ/nroads,counter);
 }

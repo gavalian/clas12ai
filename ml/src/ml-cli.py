@@ -244,11 +244,12 @@ def predict(args):
 
         for i in range(0,N):
             k = clib.count_roads(i)
-            roads = clib.read_roads(k,i)
-            dict_input['prediction']['data'] = roads
-            pred = model.predict(dict_input)
-            preds = pred['predictions']
-            clib.write_roads(preds,i)
+            if (k>0):
+                roads = clib.read_roads(k,i)
+                dict_input['prediction']['data'] = roads
+                pred = model.predict(dict_input)
+                preds = pred['predictions']
+                clib.write_roads(preds,i)
 
     # TODO continue implementation
     # raise NotImplementedError
