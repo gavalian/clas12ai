@@ -7,9 +7,16 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "reader.h"
+#include "dcana.h"
+
 #define ARRAY_SIZE 100*4032
 
-
+hipo::reader       reader;
+hipo::event        event;
+hipo::dictionary   factory;
+hipo::bank        *hitsBank;
+clas12::dcana      analyzer;
 
 extern "C" {
   void  open_file(const char *filename);
@@ -25,6 +32,9 @@ extern "C" {
 //====================================================
 void open_file(const char *filename){
   printf("---> some file was opened with name : %s\n",filename);
+  reader.open(filename);
+  reader.readDictionary(factory);
+  hitsBank = new hipo::bank(factory.getSchema("HitBasedTrkg::HBHits"));
 }
 //========================================================
 //= Read next bunch of track candidates and return
@@ -34,24 +44,39 @@ void open_file(const char *filename){
 //= valid return value).
 //========================================================
 int read_next(){
-  return rand()%6+3;
+  bool status = reader.next();
+  if(status==false) return -1;
+  reader.read(event);
+  event.getStructure(*hitsBank);
+  analyzer.readClusters(*hitsBank,1);
+  analyzer.makeTracks();
+  int ntracks = analyzer.getNtracks();
+  return 1;
 }
 
 int count_roads(int banch){
-  return rand()%3+4;
+  int ntracks = analyzer.getNtracks();
+  return ntracks;
 }
 
 void  read_roads ( double *roads, int nroads, int banch){
-  int nfeatures = 6;
+  analyzer.getFeatures(roads);
+  /*int nfeatures = 6;
   for(int i = 0; i < nroads*nfeatures; i++){
     roads[i] = ((double)rand())/RAND_MAX;
-  }
+  }*/
 }
 
 void  write_roads( double *roads_results, int nroads, int banch){
-  printf("banch %5d : results = ",banch);
+  /*printf("banch %5d : results = ",banch);
   for(int i = 0; i < nroads; i++){
     printf(" %6.3f ",roads_results[i]);
+  }
+  printf("\n");*/
+  analyzer.showFeatures();
+  printf(" Probability : ");
+  for(int i = 0; i < nroads; i++){
+    printf("%8.4f ",roads_results[i]);
   }
   printf("\n");
 }
