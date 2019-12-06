@@ -18,9 +18,12 @@ hipo::writer       writer;
 hipo::event        event;
 hipo::dictionary   factory;
 hipo::bank        *hitsBank;
+hipo::bank        *trackBank;
+hipo::bank        *nnBank;
 clas12::dcana      analyzer;
 clas12::sector     sector;
 
+long static eventsProcessed = 0;
 
 extern "C" {
   void  open_file(const char *filename);
@@ -38,7 +41,10 @@ void open_file(const char *filename){
   printf("---> some file was opened with name : %s\n",filename);
   reader.open(filename);
   reader.readDictionary(factory);
-  hitsBank = new hipo::bank(factory.getSchema("HitBasedTrkg::HBHits"));
+  //hitsBank = new hipo::bank(factory.getSchema("HitBasedTrkg::HBHits"));
+  hitsBank = new hipo::bank(factory.getSchema("TimeBasedTrkg::TBHits"));
+  trackBank = new hipo::bank(factory.getSchema("TimeBasedTrkg::TBTracks"));
+  nnBank    = new hipo::bank(factory.getSchema("nn::dchits"),4);
   writer.addDictionary(factory);
   writer.open("ai_inferred.hipo");
 }
@@ -56,15 +62,20 @@ int read_next(){
     writer.close();
     return -1;
   }
+  eventsProcessed++;
+  if(eventsProcessed%1000==0){
+    printf("processed %lu\n",eventsProcessed);
+  }
   reader.read(event);
   event.getStructure(*hitsBank);
+  event.getStructure(*trackBank);
   sector.reset();
   sector.read(*hitsBank,1);
+  sector.readTrackInfo(*trackBank);
   sector.makeTracks();
   //analyzer.readClusters(*hitsBank,1);
   //analyzer.makeTracks();
   //int ntracks = analyzer.getNtracks();
-
   return 1;
 }
 
@@ -75,10 +86,12 @@ int count_roads(int banch){
 }
 
 void  read_roads ( double *roads, int nroads, int banch){
+
   std::vector<double> features = sector.getFeatures();
   for(int i = 0; i < features.size(); i++){
     roads[i] = features[i];
   }
+  //memcpy(roads,&features[0],nroads*4*6);
   //analyzer.getFeatures(roads);
   /*int nfeatures = 6;
   for(int i = 0; i < nroads*nfeatures; i++){
@@ -88,8 +101,40 @@ void  read_roads ( double *roads, int nroads, int banch){
 
 void  write_roads( double *roads_results, int nroads, int banch){
 
+  printf("############ WRITE EVENT ##################\n");
   sector.setWeights(roads_results);
-  sector.show();
+  sector.analyze();
+  sector.showTrackInfo();
+  //if(sector.getTrackCount()>2)
+    sector.show();
+    //sector.createWireHits(*nnBank);
+
+      //sector.showBest();
+
+      hipo::bank bank(factory.getSchema("nn::dchits"),5);
+      sector.createWireHits(bank);
+
+      if(bank.getRows()>0){
+        event.addStructure(bank);
+      }
+      writer.addEvent(event);
+
+      //bank.setRows(12);
+      //bank.show();
+      //nnBank->setRows(5);
+      //nnBank->show();
+      //if(bank.getRows()>5)
+      /*for(int i = 0; i < bank.getRows(); i++){
+        bank.putShort("index",i,(int16_t) 3);
+        bank.putByte("id",i, (int8_t) 3);
+        //int id = nnBank->getInt(0,i);
+        //int index = nnBank->getInt(1,i);
+        //printf("%5d : %5d\n",i, id);
+        //printf("%5d : %5d %5d\n",i,id,index);
+      }*/
+      /*if(bank.getRows()>50)
+      bank.show();
+*/
   /*printf("banch %5d : results = ",banch);
   for(int i = 0; i < nroads; i++){
     printf(" %6.3f ",roads_results[i]);
