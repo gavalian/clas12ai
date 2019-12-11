@@ -11,6 +11,8 @@ namespace cnf {
 class points {
     int ndim;
     std::vector<double> buffer;
+    std::vector<double> weights;
+
   public:
     points(){ ndim = 2;}
     ~points(){}
@@ -19,6 +21,10 @@ class points {
       buffer.push_back(x);
       buffer.push_back(y);
     }
+    void    initWeights();
+    void    setWeight(int index, double w);
+    double  getWeight(std::vector<int> ind);
+
     int     getSize();
     double  getPoint(int index, int component);
     void    getRandom(std::vector<int> &index, std::vector<double> &result);
@@ -54,6 +60,10 @@ class foam {
     void addPoint(double x, double y){ pointBuffer.addPoint(x,y);}
     void addCell(cell &cell) { cellBuffer.push_back(cell);}
     void setCellWeight(int index, double weight) { cellBuffer[index].setWeight(weight);}
+
+    void initPointWeights();
+    void setPointWeight(int index, double w);
+
     void init();
     void show();
     void getRandom(std::vector<double> &values);

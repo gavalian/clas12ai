@@ -18,7 +18,7 @@ all: lib exe
 	@echo ' '
 
 lib: $(OBJECTS)
-	$(CXX) -shared $(OBJECTS) $(LIBRARIES) -fPIC -o libfoam.a
+	$(CXX) -O2 -shared $(OBJECTS) $(LIBRARIES) -fPIC -o libfoam.a
 
 exe: main.o
 	$(CXX) -o main.exe main.o libfoam.a
@@ -30,5 +30,5 @@ clean:
 %.o: %.cpp
 	$(CXX) -fPIC -c $< -O2 -D__LZ4__ $(CXXFLAGS) $(INCLUDES)
 
-%.o: %.ccc
+%.o: %.cc
 	$(CXX) -fPIC -c $< -O2 -D__LZ4__ $(CXXFLAGS) $(INCLUDES)

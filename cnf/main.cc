@@ -26,7 +26,7 @@ int main(int argc, char** argv){
   fm.init();
   //fm.show();
   std::vector<double> result;
-  for(int i = 0; i < 10000; i++){
+  for(int i = 0; i < 10000000; i++){
     fm.getRandom(result);
     printf("%12.4f %12.4f\n",result[0],result[1]);
   }
@@ -109,12 +109,14 @@ void readVtk(char *filename, cnf::foam &f){
     std::getline(file,line);
     std::getline(file,line);
 
+    f.initPointWeights();
+
     std::vector<float> weights(npoints);
 
     for(size_t i = 0 ; i < npoints; i++)
     {
         file >> weights[i];
-        f.setCellWeight(i,weights[i]);
+        f.setPointWeight(i,weights[i]);
     }
     std::cout << weights[0] << "\n";
 }

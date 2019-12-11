@@ -18,6 +18,27 @@ int points::getSize(){
   return buffer.size()/ndim;
 }
 
+void    points::initWeights(){
+  int size = getSize();
+  weights.resize(size,0.0);
+}
+
+void   points:: setWeight(int index, double w){
+  weights[index] = w;
+}
+
+
+double  points::getWeight(std::vector<int> ind){
+  double w = 0.0;
+  int    s = 0;
+  for(int i = 0; i < ind.size(); i++){
+    w += weights[ind[i]];
+    s++;
+  }
+  if(s==0) return 0.0;
+  return w/s;
+}
+
 void   points::getRandom(std::vector<int> &index, std::vector<double> &result){
     if(index.size()!=3){
       printf("wrong number of veticies = %lu\n",index.size());
@@ -40,6 +61,11 @@ void   points::getRandom(std::vector<int> &index, std::vector<double> &result){
 void foam::init(){
      int cellBufferSize = cellBuffer.size();
      cellIntegral.resize(cellBufferSize,0.0);
+     for(int i = 0; i < cellBufferSize; i++){
+       double w = pointBuffer.getWeight(cellBuffer[i].getNodes());
+       cellBuffer[i].setWeight(w);
+     }
+
      double integral = 0.0;
      for(int i = 0; i < cellBufferSize; i++){
        cellIntegral[i] = integral + cellBuffer[i].getWeight();
@@ -75,4 +101,14 @@ void foam::init(){
     }
       return -1;
   }
+
+
+  void foam::initPointWeights(){
+    pointBuffer.initWeights();
+  }
+  void foam::setPointWeight(int index, double w){
+    pointBuffer.setWeight(index,w);
+  }
+
+
 }
