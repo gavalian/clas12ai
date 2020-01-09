@@ -168,42 +168,55 @@ void find_clusters(std::vector<Point*>& points, int eps, size_t minPts){
             }
         } 
 
-        for (size_t j = 0; j< all_points[i].size(); j++)
+        bool increase_it = true;
+        std::vector<Point*>::iterator it = all_points[i].begin();
+        while ( it != all_points[i].end())
         {
-            Point* p = all_points[i][j];
+            increase_it = true;
+            Point* p = *it;
             if (p->label == -1)
             {
-                for (size_t k = 0; k< all_points[i].size(); k++)
+                std::vector<Point*>::iterator it2 = all_points[i].begin();
+                while ( it2 != all_points[i].end())
                 {
-                    Point* q = all_points[i][k];
+                    Point* q = *it2;
                     if ( (distance(p,q) == 1) && q->label != -1)
                     {
                         p->label = q->label;
-                        all_points[i].erase(all_points[i].begin()+k);
-                        if ( k < j)
+                        if( it2 < it)
                         {
-                            all_points[i].erase(all_points[i].begin()+(j-1));
+                            it--;
                         }
-                        else
-                        {
-                            all_points[i].erase(all_points[i].begin()+j);
-                        }
+                        it2 = all_points[i].erase(it2);
+                        it = all_points[i].erase(it);
+                        increase_it = false;
+                        break;
                     }
+                    else
+                    {
+                        ++it2;
+                    }
+                    
                 }
+            }
+            if ( increase_it)
+            {
+                it++;
             }
         }
         i -= 1;
     }
 }
 
-int dataset_case = 2;
+int dataset_case = 6;
 
 int main(int argc, char** argv)
 {
     FILE* fp = fopen(filename,"r");
     std::vector<Point*> points;
     int curr_case = 0;
-
+    // int case_ = atoi(argv[1]);
+    // dataset_case = case_;
     read_next_dataset(fp, &points);
 
     while (curr_case != dataset_case && !points.empty())
