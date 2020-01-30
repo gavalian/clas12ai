@@ -9,6 +9,7 @@ from termcolor import colored
 
 from common.svm_utils import read_concat_svm_files, filter_rows_with_label
 from models.GruModel import GruModel
+from sklearn.datasets import dump_svmlight_file
 
 def main():
     args = parse_arguments()
@@ -48,6 +49,7 @@ def parse_arguments():
     parser_test_required_args.add_argument("--testing-file", "-e", required=True, help="Path to the file containing the testing data.", dest="testing_file_path")
     parser_test_required_args.add_argument("--model", "-m", required=True, help="The name of the file from which to load the model.", dest="model_path")
     parser_test_optional_args.add_argument("--batch-size", required=False, type=int, default="16", help="Size of each batch.", dest="batch_size")
+    parser_test_optional_args.add_argument("--predictions_output", required=False, default="", help="Path to the file to dump the predictions of the testing process", dest="test_predictions_path")
 
     # Create prediction subprogram parser
     parser_predict = subparsers.add_parser("predict", help="Load a model and use it for predictions.")
@@ -94,7 +96,7 @@ def read_input_data(input_type, args) -> dict:
             "testing": {
                 "data": X_test,
                 "labels": y_test,
-                "batch_size": args.batch_size
+                "batch_size": args.batch_size,
             }
         }
 
@@ -108,7 +110,7 @@ def read_input_data(input_type, args) -> dict:
             "testing": {
                 "data": X_test,
                 "labels": y_test,
-                "batch_size": args.batch_size
+                "batch_size": args.batch_size,
             }
         }
 
@@ -148,6 +150,8 @@ def print_testing_report(testing_dict):
     testing_loss = testing_dict["testing_loss"]
     testing_prediction_time = testing_dict["testing_prediction_time"]
 
+
+
     print("\nTesting Report")
     print("================================")
     print(f'{colored("Testing loss:", "blue")} {testing_loss}')
@@ -169,13 +173,13 @@ def train_model(args):
 
     model.build_new_model()
     training_dict = model.train(input_dict)
+    model.save_model(args.output_model_path)
 
     testing_dict = model.test(input_dict)
 
     print_training_report(training_dict)
     print_testing_report(testing_dict)
 
-    model.save_model(args.output_model_path)
 
 
 def test_model(args):
@@ -194,6 +198,10 @@ def test_model(args):
     model.load_model(args.model_path)
 
     testing_dict = model.test(input_dict)
+    # if "testing_predictions" in testing_dict:
+    if args.test_predictions_path:
+        full_data = np.append(testing_dict["given_data"].reshape(-1,36),testing_dict["testing_predictions"],axis=1) * 112
+        dump_svmlight_file(np.rint(full_data), np.ones(full_data.shape[0]), args.test_predictions_path, zero_based=False)
 
     print_testing_report(testing_dict)
 

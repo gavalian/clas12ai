@@ -2,9 +2,9 @@ from timeit import default_timer as timer
 from sklearn.metrics import confusion_matrix
 from sklearn.discriminant_analysis import softmax
 from termcolor import colored
-
+from sklearn.metrics import mean_absolute_error
 from tensorflow.keras.models import load_model
-
+import numpy as np
 from common.models.AbstractModel import AbstractModel
 
 
@@ -70,7 +70,7 @@ class AbstractKerasRegressor(AbstractModel):
         training_loss = self.model.evaluate(X_train, y_train, batch_size=batch_size)
 
         return {
-            "training_loss": training_loss,
+            "training_loss": training_loss*112,
             "training_time": training_time,
         }
 
@@ -90,11 +90,15 @@ class AbstractKerasRegressor(AbstractModel):
         batch_size = input_dict["testing"]["batch_size"]
 
         start = timer()
-        testing_loss = self.model.evaluate(X_test, y_test, batch_size=batch_size)
+        testing_predictions = self.model.predict(X_test)
         end = timer()
+
         testing_prediction_time = end - start
+        testing_loss = mean_absolute_error(testing_predictions.reshape(-1,24)*112,y_test.reshape(-1,24)*112)
 
         output_dict = {
+            "given_data" : np.hstack((X_test.reshape(-1,24),y_test[:,-12:].reshape(-1,12))),
+            "testing_predictions" : testing_predictions,
             "testing_loss": testing_loss,
             "testing_prediction_time": testing_prediction_time
         }
