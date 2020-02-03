@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 
-
 #x = np.arange(14)
 #y = np.sin(x / 2)
 
