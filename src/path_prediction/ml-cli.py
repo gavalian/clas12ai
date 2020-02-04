@@ -38,6 +38,7 @@ def parse_arguments():
     parser_train_required_args.add_argument("--training-file", "-t", required=True, help="Path to the file containing the training data.", dest="training_file_path")
     parser_train_required_args.add_argument("--testing-file", "-e", required=True, help="Path to the file containing the testing data.", dest="testing_file_path")
     parser_train_required_args.add_argument("--out-model", "-m", required=True, help="Name of the file in which to save the model.", dest="output_model_path")
+    parser_train_required_args.add_argument("--num-features", "-f", type=int, choices=[6, 36], required=True, help="Number of features in training and testing data.", dest="num_features")
     parser_train_optional_args.add_argument("--epochs", required=False, type=int, default="20", help="How many training epochs to go through.", dest="epochs")
     parser_train_optional_args.add_argument("--batch-size", required=False, type=int, default="16", help="Size of each batch.", dest="batch_size")
 
@@ -48,6 +49,7 @@ def parse_arguments():
     parser_test_optional_args = parser_test.add_argument_group("Optional arguments")
     parser_test_required_args.add_argument("--testing-file", "-e", required=True, help="Path to the file containing the testing data.", dest="testing_file_path")
     parser_test_required_args.add_argument("--model", "-m", required=True, help="The name of the file from which to load the model.", dest="model_path")
+    parser_test_required_args.add_argument("--num-features", "-f", type=int, choices=[6, 36], required=True, help="Number of features in training and testing data.", dest="num_features")
     parser_test_optional_args.add_argument("--batch-size", required=False, type=int, default="16", help="Size of each batch.", dest="batch_size")
     parser_test_optional_args.add_argument("--predictions_output", required=False, default="", help="Path to the file to dump the predictions of the testing process", dest="test_predictions_path")
 
@@ -80,8 +82,8 @@ def read_input_data(input_type, args) -> dict:
 
     if input_type == "train":
         # Read training and testing data
-        X_train, y_train = read_concat_svm_files([args.training_file_path], 36)
-        X_test, y_test = read_concat_svm_files([args.testing_file_path], 36)
+        X_train, y_train = read_concat_svm_files([args.training_file_path], args.num_features)
+        X_test, y_test = read_concat_svm_files([args.testing_file_path], args.num_features)
 
         X_train, y_train = filter_rows_with_label(X_train, y_train, 1)
         X_test, y_test = filter_rows_with_label(X_test, y_test, 1)
@@ -102,7 +104,7 @@ def read_input_data(input_type, args) -> dict:
 
     elif input_type == "test":
         # Read testing data
-        X_test, y_test = read_concat_svm_files([args.testing_file_path], 36)
+        X_test, y_test = read_concat_svm_files([args.testing_file_path], args.num_features)
 
         X_test, y_test = filter_rows_with_label(X_test, y_test, 1)
 
@@ -171,7 +173,9 @@ def train_model(args):
 
     model = GruModel(input_dict=input_dict)
 
-    model.build_new_model()
+
+
+    model.build_new_model(input_dict)
     training_dict = model.train(input_dict)
     model.save_model(args.output_model_path)
 
@@ -198,10 +202,16 @@ def test_model(args):
     model.load_model(args.model_path)
 
     testing_dict = model.test(input_dict)
-    # if "testing_predictions" in testing_dict:
+
     if args.test_predictions_path:
-        full_data = np.append(testing_dict["given_data"].reshape(-1,36),testing_dict["testing_predictions"],axis=1) * 112
-        dump_svmlight_file(np.rint(full_data), np.ones(full_data.shape[0]), args.test_predictions_path, zero_based=False)
+        full_data = None
+        if args.num_features == 36:
+            full_data = np.append(testing_dict["given_data"].reshape(-1,args.num_features),testing_dict["testing_predictions"],axis=1)
+            full_data = full_data * 112
+        elif args.num_features == 6:
+            full_data = np.append(testing_dict["given_data"].reshape(-1,args.num_features),testing_dict["testing_predictions"],axis=1)
+
+        dump_svmlight_file(full_data, np.ones(full_data.shape[0]), args.test_predictions_path, zero_based=False)
 
     print_testing_report(testing_dict)
 

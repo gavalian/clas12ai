@@ -18,7 +18,7 @@ class AbstractKerasRegressor(AbstractModel):
         super().__init__(**kwargs)
         self.model = None
 
-    def build_new_model(self):
+    def build_new_model(self, input_dict):
         raise NotImplementedError
 
     def load_model(self, path):
@@ -68,9 +68,12 @@ class AbstractKerasRegressor(AbstractModel):
         training_time = end - start
 
         training_loss = self.model.evaluate(X_train, y_train, batch_size=batch_size)
+        
+        if input_dict["features"] == 24:
+            training_loss = training_loss * 112
 
         return {
-            "training_loss": training_loss*112,
+            "training_loss": training_loss,
             "training_time": training_time,
         }
 
@@ -94,10 +97,17 @@ class AbstractKerasRegressor(AbstractModel):
         end = timer()
 
         testing_prediction_time = end - start
-        testing_loss = mean_absolute_error(testing_predictions.reshape(-1,24)*112,y_test.reshape(-1,24)*112)
+        given_data = None
+        testing_loss = None
+        if input_dict["features"] == 24:
+            testing_loss = mean_absolute_error(testing_predictions.reshape(-1,24)*112,y_test.reshape(-1,24)*112)
+            given_data = np.hstack((X_test.reshape(-1,24),y_test[:,-12:].reshape(-1,12)))
+        elif input_dict["features"] == 4:
+            testing_loss = mean_absolute_error(testing_predictions.reshape(-1,4),y_test.reshape(-1,4))
+            given_data = np.hstack((X_test.reshape(-1,4),y_test[:,-2:].reshape(-1,2)))
 
         output_dict = {
-            "given_data" : np.hstack((X_test.reshape(-1,24),y_test[:,-12:].reshape(-1,12))),
+            "given_data" : given_data,
             "testing_predictions" : testing_predictions,
             "testing_loss": testing_loss,
             "testing_prediction_time": testing_prediction_time

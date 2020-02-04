@@ -23,12 +23,14 @@ class GruModel(AbstractKerasRegressor):
             self.preprocess_input(kwargs["input_dict"])
         self.model = None
 
-    def build_new_model(self):
+    def build_new_model(self, input_dict):
+
+
         model = Sequential()
 
-        model.add(GRU(40, input_shape=(24, 1), return_sequences=True))
+        model.add(GRU(40, input_shape=(input_dict["features"], 1), return_sequences=True))
         model.add(GRU(240))
-        model.add(Dense(24))
+        model.add(Dense(input_dict["features"]))
         model.compile(loss='mean_absolute_error', optimizer=RMSprop())
         model.summary()
 
@@ -38,23 +40,42 @@ class GruModel(AbstractKerasRegressor):
         if "training" in input_dict:
             X_train = input_dict["training"]["data"]
 
-            X_train_new, y_train_new = create_rnn_dataset_layer_major_2(remove_zeros(X_train))
+            X_train_new = None
+            y_train_new = None
+            
+            if X_train.shape[1] == 36:
+                X_train_new, y_train_new = create_rnn_dataset_layer_major_2(remove_zeros(X_train))
 
-            # Normalize dataset
-            X_train_new = X_train_new / 112
-            y_train_new = y_train_new / 112
+                # Normalize dataset
+                X_train_new = X_train_new / 112
+                y_train_new = y_train_new / 112
+                input_dict["features"] = 24
+
+            elif X_train.shape[1] == 6:
+                X_train_new, y_train_new = create_rnn_dataset_layer_major_6(X_train)
+                input_dict["features"] = 4
 
             input_dict["training"]["data"] = X_train_new
             input_dict["training"]["labels"] = y_train_new
 
+
         if "testing" in input_dict:
             X_test = input_dict["testing"]["data"]
 
-            X_test_new, y_test_new = create_rnn_dataset_layer_major_2(remove_zeros(X_test))
+            X_test_new = None
+            y_test_new = None
+            
+            if X_test.shape[1] == 36:
+                X_test_new, y_test_new = create_rnn_dataset_layer_major_2(remove_zeros(X_test))
+                input_dict["features"] = 24
 
-            # Normalize dataset
-            X_test_new = X_test_new / 112
-            y_test_new = y_test_new / 112
+                # Normalize dataset
+                X_test_new = X_test_new / 112
+                y_test_new = y_test_new / 112
+
+            elif X_test.shape[1] == 6:
+                X_test_new, y_test_new = create_rnn_dataset_layer_major_6(X_test)
+                input_dict["features"] = 4
 
             input_dict["testing"]["data"] = X_test_new
             input_dict["testing"]["labels"] = y_test_new

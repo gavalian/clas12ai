@@ -19,6 +19,12 @@ def remove_zeros(dataset):
     return dataset
 
 
+def create_rnn_dataset_layer_major_6(rows):
+    rows_new = rows[:,:4].reshape(-1,4,1)
+    labels_new = rows[:,2:].reshape(-1,4,1)
+    
+    return rows_new, labels_new
+
 def create_rnn_dataset_segment_major(rows):
     rows_reshaped = rows.reshape(-1, 6, 6)
     rows_new = np.delete(rows_reshaped, np.s_[4:6], axis=1)
