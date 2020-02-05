@@ -20,6 +20,7 @@ hipo::dictionary   factory;
 hipo::bank        *hitsBank;
 hipo::bank        *trackBank;
 hipo::bank        *nnBank;
+hipo::bank        *dc_tdc;
 clas12::dcana      analyzer;
 clas12::sector     sector;
 
@@ -44,6 +45,7 @@ void open_file(const char *filename){
   //hitsBank = new hipo::bank(factory.getSchema("HitBasedTrkg::HBHits"));
   hitsBank = new hipo::bank(factory.getSchema("TimeBasedTrkg::TBHits"));
   trackBank = new hipo::bank(factory.getSchema("TimeBasedTrkg::TBTracks"));
+  dc_tdc    = new hipo::bank(factory.getSchema("DC::tdc"));
   nnBank    = new hipo::bank(factory.getSchema("nn::dchits"),4);
   writer.addDictionary(factory);
   writer.open("ai_inferred.hipo");
@@ -58,6 +60,7 @@ void open_file(const char *filename){
 int read_next(){
   bool status = reader.next();
 
+  if(eventsProcessed>15000) status = false;
   if(status==false) {
     writer.close();
     return -1;
@@ -67,11 +70,14 @@ int read_next(){
     printf("processed %lu\n",eventsProcessed);
   }
   reader.read(event);
-  event.getStructure(*hitsBank);
-  event.getStructure(*trackBank);
+//  event.getStructure(*hitsBank);
+//  event.getStructure(*trackBank);
+  event.getStructure(*dc_tdc);
+
   sector.reset();
-  sector.read(*hitsBank,1);
-  sector.readTrackInfo(*trackBank);
+  //sector.read(*hitsBank,1);
+  //sector.readTrackInfo(*trackBank);
+  sector.readRaw(*dc_tdc,1);
   sector.makeTracks();
   //analyzer.readClusters(*hitsBank,1);
   //analyzer.makeTracks();
@@ -117,6 +123,7 @@ void  write_roads( double *roads_results, int nroads, int banch){
       if(bank.getRows()>0){
         event.addStructure(bank);
       }
+      
       writer.addEvent(event);
 
       //bank.setRows(12);
