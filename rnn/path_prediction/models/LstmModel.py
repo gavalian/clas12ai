@@ -23,14 +23,14 @@ class LstmModel(AbstractKerasRegressor):
             self.preprocess_input(kwargs["input_dict"])
         self.model = None
 
-    def build_new_model(self):
+    def build_new_model(self, input_dict):
         model = Sequential()
 
-        model.add(LSTM(units=224, input_shape=(24, 1), return_sequences=True))
+        model.add(LSTM(units=224, input_shape=(input_dict["features"], 1), return_sequences=True))
         model.add(LSTM(units=112, return_sequences=True))
         model.add(LSTM(units=56, return_sequences=True))
         model.add(LSTM(units=28))
-        model.add(Dense(24))
+        model.add(Dense(input_dict["features"]))
 
         m_optimizer = Nadam()
 
