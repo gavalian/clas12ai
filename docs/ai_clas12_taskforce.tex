@@ -1,0 +1,110 @@
+%\documentclass[12pt]{article}
+\documentclass[11pt]{revtex4}
+\usepackage[dvipdf]{graphicx}
+\usepackage{color}
+\usepackage{multirow}
+\usepackage{subfigure}  % For subfloats
+\usepackage{epsfig}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage{graphicx}
+\usepackage{amsmath}
+%
+\newcommand{\JLAB}{Thomas Jefferson National Accelerator Facility, Newport News, Virginia 23606}
+\newcommand{\JP}{J/$\psi~$}
+%
+\begin{document}
+\title{ Artificial Intelegence Task Force Report}
+
+
+\author{G. Gavalian}
+\affiliation{Thomas Jefferson National Accelerator Facility, Newport News, VA 23606}
+%
+
+\date{\today}
+
+\begin{abstract}
+%{\footnotesize {\bf Abstract}   }
+{{\bf Abstract.}
+This document describes AI projects that we think can help CLAS12 workflow.
+}
+\end{abstract}
+\maketitle
+%\end{document}
+%\tableofcontents
+%\clearpage
+
+\vspace{1in}
+
+\section{Introduction}
+
+In this document we provide possible areas where AI can aid CLAS12 software
+to improve either performance or reliability.
+
+\section{Tracking}
+
+During past year AI was introduced into tracking to help identify correct
+track candidates based on the segments in drift chambers. The project was
+great success in identifying correct segment combinations with reliability
+of above 99\%, and lead to reconstruction speed reduction of factor of 6.
+
+The Recurrent Neural Networks (RNN) were also implemented which gives a good prediction
+of segments in the first 2 super layers based on segments in 4 other super layers.
+This is done by using Long Short Term Memory (LSTM) network for series predictions.
+After the first successful step we would like to expand this network architecture
+to predict state vector for the track in order to reduce number of iterations
+of Kalman-Filter necessary to converge on the track. This can lead to further
+reduction in tracking time.
+
+\section{Electron Identification (Triggering)}
+
+Neural Networks can also be used in identifying events where electron is detected.
+Using prediction of series extended to the surface of Electromagnetic Calorimeter
+(ECAL), we can identify events where track has a matching hit in ECAL and has
+enough energy to be identified as an electron. Using this prediction we can significantly
+reduce number of events that should be analyzed (by tracking algorithms). This
+will lead to further reduction of tracking time.
+
+\section{Online Detector Health Monitoring}
+
+Online monitoring of detector components can also be substituted by AI. It was
+already successfully deployed in small scale in experimental Hall D. We can
+develop a Neural Network that can be trained on the good runs to recognize
+detector occupancy patterns and run classifier network to identify events
+(collection of events accumulated over some time) as good or bad.
+
+\section{Online Data Calibration}
+
+We haven't investigated possibility of calibrating the detector with Neural
+Networks. But it is a possibility and we have to look into it.
+
+\section{Summary}
+
+In summary several areas are identified where AI can be helpful for either
+data processing or online data monitoring. These include:
+
+\begin{itemize}
+\item Charged particle track identification from track segments in Drift Chambers.
+\item Determine track parameters from track segments, such as momentum and angles.
+\item Online detector monitoring, which can extend to run validation in the offline as well.
+\item Data filtering (level 3 trigger), to select events with possible trigger particle.
+\item Online detector calibration, automatically adjust gains and calibration constant for detector.
+\end{itemize}
+
+Some of these projects have started and progressed, but they are in the development stage and
+will require some further work to finalize the procedure and implement it in the workflow.
+Other projects mentioned are speculations at this point and require some investigative work
+to assess their feasibility.
+
+\subsection{Investment and Time}
+
+The AI tracking project for track classification and identification has started in collaboration
+with ODU CRTC group, and progressed well during past year. It will be beneficial to continue
+our collaboration with ODU, to use their students (who are very efficient in AI) and
+work on developing the techniques that can work for our purposes.
+
+To finalize first two projects, i.e. particle classification and prediction with RNN,
+we would like to have students working on it for another year (2020-2021), during
+that time we can also investigate other applications of AI mentioned in the list.
+
+\end{document}

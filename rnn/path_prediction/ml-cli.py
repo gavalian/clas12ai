@@ -9,6 +9,7 @@ from termcolor import colored
 
 from common.svm_utils import read_concat_svm_files, filter_rows_with_label
 from models.GruModel import GruModel
+from models.LstmModel import LstmModel
 from sklearn.datasets import dump_svmlight_file
 
 def main():
@@ -171,8 +172,8 @@ def train_model(args):
     print(colored("\nReading input data...", "green"))
     input_dict = read_input_data("train", args)
 
-    model = GruModel(input_dict=input_dict)
-
+    #model = GruModel(input_dict=input_dict)
+    model  = LstmModel(input_dict=input_dict)
 
 
     model.build_new_model(input_dict)

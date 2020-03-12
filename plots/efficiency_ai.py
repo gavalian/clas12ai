@@ -18,7 +18,7 @@ matplotlib.rcParams["legend.loc"] = 'lower right'
 
 plt.figure(figsize=(6,5))
 plt.step(xe, ye , label='ratio ai/dc')
-plt.plot(xe, ye, 'C0o', alpha=0.5)
+plt.plot(xe, ye, 'C1o', alpha=0.5)
 plt.axes().set_ylim(0.0,1.1)
 #plt.axis().set_xlabel('p [GeV]')
 #plt.step(xn, yn, where='mid', label='ai reconstruction')
