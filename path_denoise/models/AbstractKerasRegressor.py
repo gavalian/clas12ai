@@ -45,6 +45,7 @@ class AbstractModel(ABC):
     def predict(self, input_dict) -> dict:
         raise NotImplementedError
 
+
 class AbstractKerasRegressor(AbstractModel):
     """
     Represents an abstract Keras regressor model.
