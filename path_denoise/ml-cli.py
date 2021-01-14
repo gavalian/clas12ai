@@ -85,7 +85,7 @@ def parse_arguments():
 
     parser_predict_required_args.add_argument("--prediction-data", "-d", required=True,
                                               help="Path to the SVM file containing the prediction data.",
-                                              dest="data_file_path")
+                                              dest="prediction_file_path")
 
     parser_predict_required_args.add_argument("--model", "-m", required=True,
                                               help="The name of the file from which to load the model.",
@@ -135,15 +135,13 @@ def read_input_data(input_type, args) -> dict:
                               "pads_per_ring": 112}
         }
 
-    # elif input_type == "predict":
-    #    data = hits_array_from_parquet(args.data_file_path, z_range_offset)[0]
-    #    data = preprocess_data_predicting(data, total_planes, args.padding)
-
-    #    return {
-    #        "prediction": {"data": data},
-    #     #    "configuration": {"total_planes": total_planes, "rings_per_plane": RINGS_PER_PLANE,
-    #     #                         "pads_per_ring": PADS_PER_RING + args.padding}
-    #     }
+    elif input_type == "predict":
+        X_test, y_test = read_svm_to_X_Y_datasets(args.prediction_file_path, 4032)
+        
+        return {"prediction": {"data": X_test, "labels": y_test},
+                    "configuration": {"total_planes": 1, "rings_per_plane": 36,
+                    "pads_per_ring": 112}
+                    }
 
     else:
         print(colored("Error: Wrong input type.", "red"))
@@ -330,6 +328,36 @@ def test_model(args):
     plot_random_predicted_events(results_dir, input_dict["testing"]["labels"], input_dict["testing"]["data"], testing_metrics["predictions"], 6)
     print(colored(f'\nSaving testing results to {results_dir}\n', "green"))
 
+
+def predict(args):
+    """
+    Uses a model for predicting values for input data read from a Parquet file.
+
+    Args:
+        args: The object that contains all the parsed CLI arguments.
+    """
+    print(colored("\nReading input data...", "green"))
+    input_dict = read_input_data("predict", args)
+    results_dir = args.results_dir.rstrip('/')+'/'
+    if not os.path.exists(results_dir):
+        os.mkdir(results_dir)
+    model = CnnDenoisingModel(input_dict=input_dict)
+
+    model.load_model(args.model_path)
+    predict_metrics = model.predict(input_dict)
+    # predict_metrics["results_dir"] = results_dir
+    denoised = predict_metrics["predictions"]
+    raw = input_dict["prediction"]["data"]
+    clean = input_dict["prediction"]["labels"]
+
+    write_raw_clean_denoised_to_svm(results_dir+"prediction.lsvm", raw, clean, denoised, 4032)
+    
+    # predict_metrics["input_data"] = input_dict["prediction"]["data"]
+    # predict_metrics["num_planes"] = input_dict["configuration"]["total_planes"]
+    # predict_metrics["path_to_df"] = input_dict["prediction"]["input"]
+    # predict_metrics["quantization"] = input_dict["prediction"]["quantization"]
+    # save_prediction_results(predict_metrics)
+
 def save_prediction_results(predict_metrics):
     """
     Creates a new dataset clean from the noisy hits and stores it into parquet format
@@ -360,29 +388,7 @@ def save_prediction_results(predict_metrics):
     df.to_parquet(results_dir+'denoised_data.parquet', index=False)
     print(colored(f'\nSaving prediction results to {results_dir}\n', "green"))
 
-def predict(args):
-    """
-    Uses a model for predicting values for input data read from a Parquet file.
 
-    Args:
-        args: The object that contains all the parsed CLI arguments.
-    """
-    print(colored("\nReading input data...", "green"))
-    input_dict = read_input_data("predict", args)
-    results_dir = args.results_dir.rstrip('/')+'/'
-    if not os.path.exists(results_dir):
-        os.mkdir(results_dir)
-    model = CnnDenoisingModel(input_dict=input_dict)
-
-    model.load_model(args.model_path)
-    predict_metrics = model.predict(input_dict)
-    predict_metrics["results_dir"] = results_dir
-    
-    predict_metrics["input_data"] = input_dict["prediction"]["data"]
-    predict_metrics["num_planes"] = input_dict["configuration"]["total_planes"]
-    predict_metrics["path_to_df"] = input_dict["prediction"]["input"]
-    predict_metrics["quantization"] = input_dict["prediction"]["quantization"]
-    save_prediction_results(predict_metrics)
 
 
 def get_subroutine(args):
