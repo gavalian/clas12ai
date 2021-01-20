@@ -6,15 +6,20 @@ import os
 import argparse
 from termcolor import colored
 
-# from path_denoise_3d.detector_configuration import *
 from process_input import *
 # from pandas_from_json import hits_array_from_parquet, coordinates_dataframe_from_parquet
-from models.CnnDenoisingModel import CnnDenoisingModel
 import matplotlib
 matplotlib.use('pdf')
 import matplotlib.pyplot as plt
 import numpy as np
 import histogram as hm
+
+from models.CnnDenoisingModel0 import CnnDenoisingModel0
+from models.CnnDenoisingModel0a import CnnDenoisingModel0a
+from models.CnnDenoisingModel0b import CnnDenoisingModel0b
+from models.CnnDenoisingModel0c import CnnDenoisingModel0c
+from models.CnnDenoisingModel1 import CnnDenoisingModel1
+from models.CnnDenoisingModel2 import CnnDenoisingModel2
 
 def main():
     args = parse_arguments()
@@ -40,15 +45,15 @@ def parse_arguments():
     parser_train._action_groups.pop()
     parser_train_required_args = parser_train.add_argument_group("Required arguments")
     parser_train_optional_args = parser_train.add_argument_group("Optional arguments")
-    
-    parser_train_required_args.add_argument("--training-file-path", "-t", required=True,
+
+    parser_train_required_args.add_argument("--training-file", "-t", required=True,
                                             help="Path to the SVM file containing the training data.",
                                             dest="training_file_path")
 
-    parser_train_required_args.add_argument("--validation-file-path", "-v", required=True,
+    parser_train_required_args.add_argument("--validation-file", "-v", required=True,
                                             help="Path to the SVM file containing the training data.",
                                             dest="testing_file_path")
-    
+
     parser_train_required_args.add_argument("--results-dir", "-r", required=True,
                                             help="Path to the directory to store the model produced and related results.",
                                             dest="results_dir")
@@ -64,14 +69,14 @@ def parse_arguments():
     parser_test._action_groups.pop()
     parser_test_required_args = parser_test.add_argument_group("Required arguments")
     parser_test_optional_args = parser_test.add_argument_group("Optional arguments")
-    
-    parser_test_required_args.add_argument("--validation-file-path", "-v", required=True,
+
+    parser_test_required_args.add_argument("--validation-file", "-v", required=True,
                                             help="Path to the SVM file containing the training data.",
                                             dest="testing_file_path")
-    
+
     parser_test_required_args.add_argument("--model", "-m", required=True,
                                            help="The name of the file from which to load the model.", dest="model_path")
-   
+
     parser_test_required_args.add_argument("--results-dir", "-r", required=True,
                                             help="Path to the directory to store results.",
                                             dest="results_dir")
@@ -85,7 +90,7 @@ def parse_arguments():
     parser_predict_required_args = parser_predict.add_argument_group("Required arguments")
     parser_predict_optional_args = parser_predict.add_argument_group("Optional arguments")
 
-    parser_predict_required_args.add_argument("--prediction-data", "-d", required=True,
+    parser_predict_required_args.add_argument("--prediction-file", "-p", required=True,
                                               help="Path to the SVM file containing the prediction data.",
                                               dest="prediction_file_path")
 
@@ -123,8 +128,7 @@ def read_input_data(input_type, args) -> dict:
         return {
             "training": {"data": X_train, "labels": y_train, "epochs": args.epochs, "batch_size": args.batch_size},
             "testing": {"data": X_test, "labels": y_test, "batch_size": args.batch_size},
-            "configuration": {"total_planes": 1, "rings_per_plane": 36,
-                              "pads_per_ring": 112}
+            "configuration": {"layers": 36, "sensors_per_layer": 112}
         }
 
     elif input_type == "test":
@@ -133,17 +137,16 @@ def read_input_data(input_type, args) -> dict:
 
         return {
             "testing": {"data": X_test, "labels": y_test, "batch_size": args.batch_size},
-            "configuration": {"total_planes": 1, "rings_per_plane": 36,
-                              "pads_per_ring": 112}
+            "configuration": {"layers": 36, "sensors_per_layer": 112}
         }
 
     elif input_type == "predict":
         X_test, y_test = read_svm_to_X_Y_datasets(args.prediction_file_path, 4032)
-        
-        return {"prediction": {"data": X_test, "labels": y_test},
-                    "configuration": {"total_planes": 1, "rings_per_plane": 36,
-                    "pads_per_ring": 112}
-                    }
+
+        return {
+            "prediction": {"data": X_test, "labels": y_test},
+            "configuration": {"layers": 36, "sensors_per_layer": 112}
+        }
 
     else:
         print(colored("Error: Wrong input type.", "red"))
@@ -170,8 +173,6 @@ def plot_random_predicted_events(results_dir, ground_truth, noisy, prediction, n
         plt.imsave(results_dir+'correct'+str(i)+'.png', ground_truth[index].reshape(img_shape))
         plt.imsave(results_dir+'noisy'+str(i)+'.png', noisy[index].reshape(img_shape))
         plt.imsave(results_dir+'denoised'+str(i)+'.png', (prediction[index].reshape(img_shape)>0.5).astype(int))
-
-
 
 
 def plot_accuracy_histogram(testing_metrics):
@@ -209,7 +210,7 @@ def plot_accuracy_histogram(testing_metrics):
     print(f'{colored("Noise Maximum value(%)::", "blue")} {noise_max}')
     print(f'{colored("Noise Mean value(%)::", "blue")} {noise_mean}')
 
-    with open(results_dir + 'testing_report','a+') as f:
+    with open(results_dir + 'testing_report.txt','a+') as f:
         f.write('Total number of cases: '+ str(cases) + '\n')
         f.write('Hits Minimum value(%): ' + str(hits_min) + '\n')
         f.write('Hits Maximum value(%): ' + str(hits_max) + '\n')
@@ -217,7 +218,6 @@ def plot_accuracy_histogram(testing_metrics):
         f.write('Noise Minimum value(%): ' + str(noise_min) + '\n')
         f.write('Noise Maximum value(%): ' + str(noise_max) + '\n')
         f.write('Noise Mean value(%): ' + str(noise_mean) + '\n')
-
 
 
 def plot_train_val_graph(training_metrics):
@@ -230,7 +230,7 @@ def plot_train_val_graph(training_metrics):
     training_loss_history = training_metrics["training_loss_history"]
     validation_loss_history = training_metrics["validation_loss_history"]
     results_dir = training_metrics["results_dir"]
-    
+
     epoch_count = range(1, len(training_loss_history) + 1)
     plt.figure(1)
 
@@ -241,7 +241,7 @@ def plot_train_val_graph(training_metrics):
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.savefig(results_dir+'train_val_loss_graph.png')
-    
+
 
 def print_training_report(training_metrics):
     """
@@ -254,15 +254,14 @@ def print_training_report(training_metrics):
     training_loss = training_metrics["training_loss"]
     training_time = training_metrics["training_time"]
     training_results_dir = training_metrics["results_dir"]
-    
-    with open(training_results_dir + 'training_report','w+') as f:
+
+    with open(training_results_dir + 'training_report.txt','w+') as f:
         f.write("Training loss: " + str(training_loss) +'\n')
         f.write("Training time: " + str(training_time) +'\n')
     print("\nTraining Report")
     print("================================")
     print(f'{colored("Training loss:", "blue")} {training_loss}')
     print(f'{colored("Training time:", "blue")} {training_time}s')
-
 
 
 def print_testing_report(testing_metrics):
@@ -277,7 +276,7 @@ def print_testing_report(testing_metrics):
     testing_prediction_time = testing_metrics["testing_prediction_time"]
     testing_results_dir = testing_metrics["results_dir"]
 
-    with open(testing_results_dir + 'testing_report','w+') as f:
+    with open(testing_results_dir + 'testing_report.txt','w+') as f:
         f.write("Testing loss: " + str(testing_loss) +'\n')
         f.write("Testing prediction time: " + str(testing_prediction_time) +'\n')
 
@@ -296,11 +295,13 @@ def train_model(args):
     """
 
     print(colored("\nReading input data...", "green"))
+
     input_dict = read_input_data("train", args)
     results_dir = args.results_dir.rstrip('/')+'/'
     if not os.path.exists(results_dir):
         os.mkdir(results_dir)
-    model = CnnDenoisingModel(input_dict=input_dict)
+
+    model = CnnDenoisingModel0(input_dict=input_dict)
 
     model.build_new_model()
     training_metrics = model.train(input_dict)
@@ -321,11 +322,13 @@ def test_model(args):
     """
 
     print(colored("\nReading input data...", "green"))
+
     input_dict = read_input_data("test", args)
     results_dir = args.results_dir.rstrip('/')+'/'
     if not os.path.exists(results_dir):
         os.mkdir(results_dir)
-    model = CnnDenoisingModel(input_dict=input_dict)
+
+    model = CnnDenoisingModel0(input_dict=input_dict)
 
     model.load_model(args.model_path)
 
@@ -346,11 +349,13 @@ def predict(args):
         args: The object that contains all the parsed CLI arguments.
     """
     print(colored("\nReading input data...", "green"))
+
     input_dict = read_input_data("predict", args)
     results_dir = args.results_dir.rstrip('/')+'/'
     if not os.path.exists(results_dir):
         os.mkdir(results_dir)
-    model = CnnDenoisingModel(input_dict=input_dict)
+
+    model = CnnDenoisingModel0(input_dict=input_dict)
 
     model.load_model(args.model_path)
     predict_metrics = model.predict(input_dict)
@@ -360,7 +365,7 @@ def predict(args):
     clean = input_dict["prediction"]["labels"]
 
     write_raw_clean_denoised_to_svm(results_dir+"prediction.lsvm", raw, clean, denoised, 4032)
-    
+
     # predict_metrics["input_data"] = input_dict["prediction"]["data"]
     # predict_metrics["num_planes"] = input_dict["configuration"]["total_planes"]
     # predict_metrics["path_to_df"] = input_dict["prediction"]["input"]
@@ -396,8 +401,6 @@ def save_prediction_results(predict_metrics):
         df = df[~df[['eventid', 'plane', 'ring', 'pad']].apply(tuple, 1).isin(bad_tuples)]
     df.to_parquet(results_dir+'denoised_data.parquet', index=False)
     print(colored(f'\nSaving prediction results to {results_dir}\n', "green"))
-
-
 
 
 def get_subroutine(args):

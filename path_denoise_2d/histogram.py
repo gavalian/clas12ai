@@ -32,10 +32,10 @@ def plot_hits(path, predictions, ground_truth, threshold = 0.5):
 #    print('Total number of cases: '+ str(ground_truth.shape[0]))
 #    print('Hits Minimum value(%): ' + str(unique.min()))
 #    print('Hits Maximum value(%): ' + str(unique.max()))
-    
-    return {  
-            "num" : ground_truth.shape[0], 
-            "min" : unique.min(), 
+
+    return {
+            "num" : ground_truth.shape[0],
+            "min" : unique.min(),
             "max" : unique.max(),
             "mean": mean(unique)}
 
@@ -65,7 +65,7 @@ def plot_noise(path, predictions, ground_truth, threshold = 0.5):
     plt.title('Noise Hits histogram')
     plt.hist(np.minimum(unique,104), bins=(np.arange(0, 110, 5)))
     plt.savefig(path)
-    
+
     return {
             "num" : ground_truth.shape[0],
             "min" : unique.min(),

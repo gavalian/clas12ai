@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from sklearn.datasets import load_svmlight_file, dump_svmlight_file
 
+
 def read_svm_file(filename, num_features):
     """
     Reads the SVM file with the passed name and returns
@@ -25,6 +26,7 @@ def read_svm_file(filename, num_features):
 
     return np.array(data0_dense), data[1]
 
+
 def read_svm_to_X_Y_datasets(filename, num_features):
     """
     Reads the SVM file with the passed name and returns
@@ -40,15 +42,16 @@ def read_svm_to_X_Y_datasets(filename, num_features):
     invalid = []
 
     for v, array in zip(labels, features):
-        if v == 0:
-            invalid.append(array)
-        else:
+        if v != 0:
             valid.append(array)
+        else:
+            invalid.append(array)
 
     valid = np.array(np.vstack(valid)).reshape(-1, 36, 112, 1)
     invalid = np.array(np.vstack(invalid)).reshape(-1, 36, 112, 1)
 
     return invalid, valid
+
 
 def write_raw_clean_denoised_to_svm(filename, raw, clean, denoised, num_features):
     """
