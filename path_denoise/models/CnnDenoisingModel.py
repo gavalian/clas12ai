@@ -26,20 +26,20 @@ class CnnDenoisingModel(AbstractKerasRegressor):
     # This model did not work for me. I had to comment out lines 34 -> 37 to make it work in order to test things. 
     def build_new_model(self):
         k_model = Sequential()
-        k_model.add(tf.keras.layers.Conv2D(64, kernel_size=(3, 4), activation='relu', padding="same",
+        k_model.add(tf.keras.layers.Conv2D(48, kernel_size=(4, 6), activation='relu', padding="same",
                                          input_shape=(self.total_planes * self.rings_per_plane, self.pads_per_ring, 1)))
         k_model.add(tf.keras.layers.MaxPooling2D((2, 2)))
-        k_model.add(tf.keras.layers.Conv2D(64, kernel_size=(3, 4), activation='relu', padding="same"))
-        k_model.add(tf.keras.layers.MaxPooling2D((3, 2)))
+        k_model.add(tf.keras.layers.Conv2D(48, kernel_size=(4, 6), activation='relu', padding="same"))
+        k_model.add(tf.keras.layers.MaxPooling2D((2, 2)))
 #        k_model.add(tf.keras.layers.Conv2D(64, kernel_size=(3, 4), activation='relu', padding="same"))
 #        k_model.add(tf.keras.layers.MaxPooling2D((2, 2)))
 #        k_model.add(tf.keras.layers.Conv2D(64, kernel_size=(3, 4), activation='relu', padding="same"))
 #        k_model.add(tf.keras.layers.UpSampling2D((2, 2)))
-        k_model.add(tf.keras.layers.Conv2D(64, kernel_size=(3, 4), activation='relu', padding="same"))
-        k_model.add(tf.keras.layers.UpSampling2D((3, 2)))
-        k_model.add(tf.keras.layers.Conv2D(64, kernel_size=(3, 4), activation='relu', padding="same"))
+        k_model.add(tf.keras.layers.Conv2D(48, kernel_size=(4, 6), activation='relu', padding="same"))
         k_model.add(tf.keras.layers.UpSampling2D((2, 2)))
-        k_model.add(tf.keras.layers.Conv2D(1, kernel_size=(3, 4), activation='sigmoid', padding="same"))
+        k_model.add(tf.keras.layers.Conv2D(48, kernel_size=(4, 6), activation='relu', padding="same"))
+        k_model.add(tf.keras.layers.UpSampling2D((2, 2)))
+        k_model.add(tf.keras.layers.Conv2D(1, kernel_size=(4, 6), activation='sigmoid', padding="same"))
         k_model.summary()
 
         k_model.compile(optimizer='nadam', loss='binary_crossentropy')

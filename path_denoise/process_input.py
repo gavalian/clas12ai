@@ -40,10 +40,10 @@ def read_svm_to_X_Y_datasets(filename, num_features):
     invalid = []
 
     for v, array in zip(labels, features):
-        if v == 1:
-            valid.append(array)
-        else:
+        if v == 0:
             invalid.append(array)
+        else:
+            valid.append(array)
 
     valid = np.array(np.vstack(valid)).reshape(-1, 36, 112, 1)
     invalid = np.array(np.vstack(invalid)).reshape(-1, 36, 112, 1)

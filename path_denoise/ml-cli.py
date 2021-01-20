@@ -10,6 +10,8 @@ from termcolor import colored
 from process_input import *
 # from pandas_from_json import hits_array_from_parquet, coordinates_dataframe_from_parquet
 from models.CnnDenoisingModel import CnnDenoisingModel
+import matplotlib
+matplotlib.use('pdf')
 import matplotlib.pyplot as plt
 import numpy as np
 import histogram as hm
@@ -192,22 +194,29 @@ def plot_accuracy_histogram(testing_metrics):
     cases = hits_stats["num"]
     hits_max = hits_stats["max"]
     hits_min = hits_stats["min"]
+    hits_mean = hits_stats["mean"]
 
     print(f'{colored("Total number of cases:", "blue")} {cases}')
     print(f'{colored("Hits Minimum value(%):", "blue")} {hits_min}')
     print(f'{colored("Hits Maximum value(%)::", "blue")} {hits_max}')
+    print(f'{colored("Hits Mean value(%)::", "blue")} {hits_mean}')
 
     noise_max = noise_stats["max"]
     noise_min = noise_stats["min"]
+    noise_mean = noise_stats["mean"]
+
     print(f'{colored("Noise Minimum value(%):", "blue")} {noise_min}')
     print(f'{colored("Noise Maximum value(%)::", "blue")} {noise_max}')
+    print(f'{colored("Noise Mean value(%)::", "blue")} {noise_mean}')
 
     with open(results_dir + 'testing_report','a+') as f:
         f.write('Total number of cases: '+ str(cases) + '\n')
         f.write('Hits Minimum value(%): ' + str(hits_min) + '\n')
         f.write('Hits Maximum value(%): ' + str(hits_max) + '\n')
+        f.write('Hits Mean value(%): ' + str(hits_mean) + '\n')
         f.write('Noise Minimum value(%): ' + str(noise_min) + '\n')
         f.write('Noise Maximum value(%): ' + str(noise_max) + '\n')
+        f.write('Noise Mean value(%): ' + str(noise_mean) + '\n')
 
 
 
