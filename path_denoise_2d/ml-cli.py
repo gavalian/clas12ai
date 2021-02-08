@@ -13,13 +13,12 @@ matplotlib.use('pdf')
 import matplotlib.pyplot as plt
 import numpy as np
 import histogram as hm
-
-from models.CnnDenoisingModel0 import CnnDenoisingModel0
-from models.CnnDenoisingModel0a import CnnDenoisingModel0a
-from models.CnnDenoisingModel0b import CnnDenoisingModel0b
-from models.CnnDenoisingModel0c import CnnDenoisingModel0c
-from models.CnnDenoisingModel1 import CnnDenoisingModel1
-from models.CnnDenoisingModel2 import CnnDenoisingModel2
+# from models.CnnDenoisingModel0 import CnnDenoisingModel0 as CnnDenoisingModel
+# from models.CnnDenoisingModel0a import CnnDenoisingModel0a
+# from models.CnnDenoisingModel0b import CnnDenoisingModel0b
+# from models.CnnDenoisingModel0c import CnnDenoisingModel0c
+# from models.CnnDenoisingModel1 import CnnDenoisingModel1
+# from models.CnnDenoisingModel2 import CnnDenoisingModel2
 
 def main():
     args = parse_arguments()
@@ -63,6 +62,9 @@ def parse_arguments():
 
     parser_train_optional_args.add_argument("--batch-size", "-b", required=False, type=int, default="8",
                                             help="Size of the training batch.", dest="batch_size")
+
+    parser_train_optional_args.add_argument("--network", "-n", required=False, default="",
+                                            help="Neural Network to use.", dest="nn")
 
     # Create evaluation subprogram parser
     parser_test = subparsers.add_parser("test", help="Load a model for testing.")
@@ -187,37 +189,65 @@ def plot_accuracy_histogram(testing_metrics):
     ground_truth = ground_truth.reshape((-1, ground_truth.shape[-3] * ground_truth.shape[-2]))
     predictions = testing_metrics["predictions"]
     predictions = predictions.reshape((-1, predictions.shape[-3] * predictions.shape[-2]))
+    raw_input = testing_metrics["input"]
+    raw_input = raw_input.reshape((-1, raw_input.shape[-3] * raw_input.shape[-2]))
 
     results_dir = testing_metrics["results_dir"]
 
     hits_stats = hm.plot_hits(results_dir+'hits_histogram.png', predictions, ground_truth)
     noise_stats = hm.plot_noise(results_dir+'noise_histogram.png', predictions, ground_truth)
+    noise_reduction_stats = hm.plot_noise_reduction(results_dir+'noise_reduction_histogram.png', predictions, raw_input)
+    
+    
     cases = hits_stats["num"]
     hits_max = hits_stats["max"]
     hits_min = hits_stats["min"]
     hits_mean = hits_stats["mean"]
+    hits_rms = hits_stats["rms"]
 
     print(f'{colored("Total number of cases:", "blue")} {cases}')
     print(f'{colored("Hits Minimum value(%):", "blue")} {hits_min}')
     print(f'{colored("Hits Maximum value(%)::", "blue")} {hits_max}')
     print(f'{colored("Hits Mean value(%)::", "blue")} {hits_mean}')
+    print(f'{colored("Hits RMS(%)::", "blue")} {hits_rms}')
 
     noise_max = noise_stats["max"]
     noise_min = noise_stats["min"]
     noise_mean = noise_stats["mean"]
+    noise_rms = noise_stats["rms"]
 
     print(f'{colored("Noise Minimum value(%):", "blue")} {noise_min}')
     print(f'{colored("Noise Maximum value(%)::", "blue")} {noise_max}')
     print(f'{colored("Noise Mean value(%)::", "blue")} {noise_mean}')
+    print(f'{colored("Noise RMS value(%)::", "blue")} {noise_rms}')
+
+
+    noise_reduction_max = noise_reduction_stats["max"]
+    noise_reduction_min = noise_reduction_stats["min"]
+    noise_reduction_mean = noise_reduction_stats["mean"]
+    noise_reduction_rms = noise_reduction_stats["rms"]
+
+    print(f'{colored("Noise Reduction Minimum value(%):", "blue")} {noise_reduction_min}')
+    print(f'{colored("Noise Reduction Maximum value(%)::", "blue")} {noise_reduction_max}')
+    print(f'{colored("Noise Reduction Mean value(%)::", "blue")} {noise_reduction_mean}')
+    print(f'{colored("Noise Reduction RMS value(%)::", "blue")} {noise_reduction_rms}')
+
+
 
     with open(results_dir + 'testing_report.txt','a+') as f:
         f.write('Total number of cases: '+ str(cases) + '\n')
         f.write('Hits Minimum value(%): ' + str(hits_min) + '\n')
         f.write('Hits Maximum value(%): ' + str(hits_max) + '\n')
         f.write('Hits Mean value(%): ' + str(hits_mean) + '\n')
+        f.write('Hits RMS value(%): ' + str(hits_rms) + '\n')
         f.write('Noise Minimum value(%): ' + str(noise_min) + '\n')
         f.write('Noise Maximum value(%): ' + str(noise_max) + '\n')
         f.write('Noise Mean value(%): ' + str(noise_mean) + '\n')
+        f.write('Noise RMS value(%): ' + str(noise_rms) + '\n')
+        f.write('Noise Reduction Minimum value(%): ' + str(noise_reduction_min) + '\n')
+        f.write('Noise Reduction Maximum value(%): ' + str(noise_reduction_max) + '\n')
+        f.write('Noise Reduction Mean value(%): ' + str(noise_reduction_mean) + '\n')
+        f.write('Noise Reduction RMS value(%): ' + str(noise_reduction_rms) + '\n')
 
 
 def plot_train_val_graph(training_metrics):
@@ -294,6 +324,26 @@ def train_model(args):
         args: The object that contains all the parsed CLI arguments.
     """
 
+    if not args.nn :
+        print("Training model 0")
+        from models.CnnDenoisingModel0 import CnnDenoisingModel0 as CnnDenoisingModel
+    elif args.nn == "0a":
+        print("Training model 0a")
+        from models.CnnDenoisingModel0a import CnnDenoisingModel0a  as CnnDenoisingModel
+    elif args.nn == "0b":
+        print("Training model 0b")
+        from models.CnnDenoisingModel0b import CnnDenoisingModel0b  as CnnDenoisingModel
+    elif args.nn == "0c":
+        print("Training model 0c")
+        from models.CnnDenoisingModel0c import CnnDenoisingModel0c  as CnnDenoisingModel
+    elif args.nn == "1":
+        print("Training model 1")
+        from models.CnnDenoisingModel1 import CnnDenoisingModel1  as CnnDenoisingModel
+    elif args.nn == "2":
+        print("Training model 2")
+        from models.CnnDenoisingModel2 import CnnDenoisingModel2 as CnnDenoisingModel
+
+
     print(colored("\nReading input data...", "green"))
 
     input_dict = read_input_data("train", args)
@@ -301,7 +351,7 @@ def train_model(args):
     if not os.path.exists(results_dir):
         os.mkdir(results_dir)
 
-    model = CnnDenoisingModel0(input_dict=input_dict)
+    model = CnnDenoisingModel(input_dict=input_dict)
 
     model.build_new_model()
     training_metrics = model.train(input_dict)
@@ -322,17 +372,19 @@ def test_model(args):
     """
 
     print(colored("\nReading input data...", "green"))
+    from models.CnnDenoisingModel0 import CnnDenoisingModel0 as CnnDenoisingModel
 
     input_dict = read_input_data("test", args)
     results_dir = args.results_dir.rstrip('/')+'/'
     if not os.path.exists(results_dir):
         os.mkdir(results_dir)
 
-    model = CnnDenoisingModel0(input_dict=input_dict)
+    model = CnnDenoisingModel(input_dict=input_dict)
 
     model.load_model(args.model_path)
 
     testing_metrics = model.test(input_dict)
+    testing_metrics["input"] = input_dict["testing"]["data"]
     testing_metrics["results_dir"] = results_dir
 
     print_testing_report(testing_metrics)
@@ -355,7 +407,7 @@ def predict(args):
     if not os.path.exists(results_dir):
         os.mkdir(results_dir)
 
-    model = CnnDenoisingModel0(input_dict=input_dict)
+    model = CnnDenoisingModel(input_dict=input_dict)
 
     model.load_model(args.model_path)
     predict_metrics = model.predict(input_dict)
