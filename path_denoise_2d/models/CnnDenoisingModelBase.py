@@ -19,7 +19,6 @@ class CnnDenoisingModelBase(AbstractKerasRegressor):
             self.preprocess_input(input_dict)
         self.model = None
 
-    @abstractmethod
     def build_new_model(self):
         raise NotImplementedError
 

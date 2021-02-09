@@ -13,12 +13,8 @@ matplotlib.use('pdf')
 import matplotlib.pyplot as plt
 import numpy as np
 import histogram as hm
-# from models.CnnDenoisingModel0 import CnnDenoisingModel0 as CnnDenoisingModel
-# from models.CnnDenoisingModel0a import CnnDenoisingModel0a
-# from models.CnnDenoisingModel0b import CnnDenoisingModel0b
-# from models.CnnDenoisingModel0c import CnnDenoisingModel0c
-# from models.CnnDenoisingModel1 import CnnDenoisingModel1
-# from models.CnnDenoisingModel2 import CnnDenoisingModel2
+from models.CnnDenoisingModelBase import CnnDenoisingModelBase
+
 
 def main():
     args = parse_arguments()
@@ -64,7 +60,7 @@ def parse_arguments():
                                             help="Size of the training batch.", dest="batch_size")
 
     parser_train_optional_args.add_argument("--network", "-n", required=False, default="",
-                                            help="Neural Network to use.", dest="nn")
+                                            help="Neural network to use.", dest="nn")
 
     # Create evaluation subprogram parser
     parser_test = subparsers.add_parser("test", help="Load a model for testing.")
@@ -153,6 +149,113 @@ def read_input_data(input_type, args) -> dict:
     else:
         print(colored("Error: Wrong input type.", "red"))
         quit()
+
+
+def train_model(args):
+    """
+    Trains the model with the input data specified in the CLI arguments.
+
+    Args:
+        args: The object that contains all the parsed CLI arguments.
+    """
+
+    print(colored("\nReading input data...", "green"))
+
+    input_dict = read_input_data("train", args)
+    results_dir = args.results_dir.rstrip('/')+'/'
+    if not os.path.exists(results_dir):
+        os.mkdir(results_dir)
+
+    if not args.nn:
+        print("Training model 0")
+        from models.CnnDenoisingModel0 import CnnDenoisingModel0 as CnnDenoisingModel
+    elif args.nn == "0a":
+        print("Training model 0a")
+        from models.CnnDenoisingModel0a import CnnDenoisingModel0a as CnnDenoisingModel
+    elif args.nn == "0b":
+        print("Training model 0b")
+        from models.CnnDenoisingModel0b import CnnDenoisingModel0b as CnnDenoisingModel
+    elif args.nn == "0c":
+        print("Training model 0c")
+        from models.CnnDenoisingModel0c import CnnDenoisingModel0c as CnnDenoisingModel
+    elif args.nn == "1":
+        print("Training model 1")
+        from models.CnnDenoisingModel1 import CnnDenoisingModel1 as CnnDenoisingModel
+    elif args.nn == "2":
+        print("Training model 2")
+        from models.CnnDenoisingModel2 import CnnDenoisingModel2 as CnnDenoisingModel
+
+    model = CnnDenoisingModel(input_dict=input_dict)
+    model.build_new_model()
+
+    training_metrics = model.train(input_dict)
+    training_metrics["results_dir"] = results_dir
+
+    model.save_model(results_dir+'cnn_autoenc')
+    print_training_report(training_metrics)
+    plot_train_val_graph(training_metrics)
+    print(colored(f'\nSaving training results to {results_dir}\n', "green"))
+
+
+def test_model(args):
+    """
+    Tests a model with the input data specified in the CLI arguments.
+
+    Args:
+        args: The object that contains all the parsed CLI arguments.
+    """
+
+    print(colored("\nReading input data...", "green"))
+
+    input_dict = read_input_data("test", args)
+    results_dir = args.results_dir.rstrip('/')+'/'
+    if not os.path.exists(results_dir):
+        os.mkdir(results_dir)
+
+    model = CnnDenoisingModelBase(input_dict=input_dict)
+    model.load_model(args.model_path)
+
+    testing_metrics = model.test(input_dict)
+    testing_metrics["input"] = input_dict["testing"]["data"]
+    testing_metrics["results_dir"] = results_dir
+
+    print_testing_report(testing_metrics)
+    plot_accuracy_histogram(testing_metrics)
+    plot_random_predicted_events(results_dir, input_dict["testing"]["labels"], input_dict["testing"]["data"], testing_metrics["predictions"], 6)
+    print(colored(f'\nSaving testing results to {results_dir}\n', "green"))
+
+
+def predict(args):
+    """
+    Uses a model for predicting values for input data read from a Parquet file.
+
+    Args:
+        args: The object that contains all the parsed CLI arguments.
+    """
+    print(colored("\nReading input data...", "green"))
+
+    input_dict = read_input_data("predict", args)
+    results_dir = args.results_dir.rstrip('/')+'/'
+    if not os.path.exists(results_dir):
+        os.mkdir(results_dir)
+
+    model = CnnDenoisingModelBase(input_dict=input_dict)
+    model.load_model(args.model_path)
+
+    predict_metrics = model.predict(input_dict)
+    # predict_metrics["results_dir"] = results_dir
+    denoised = predict_metrics["predictions"]
+    raw = input_dict["prediction"]["data"]
+    clean = input_dict["prediction"]["labels"]
+
+    write_raw_clean_denoised_to_svm(results_dir+"prediction.lsvm", raw, clean, denoised, 4032)
+
+    # predict_metrics["input_data"] = input_dict["prediction"]["data"]
+    # predict_metrics["num_planes"] = input_dict["configuration"]["total_planes"]
+    # predict_metrics["path_to_df"] = input_dict["prediction"]["input"]
+    # predict_metrics["quantization"] = input_dict["prediction"]["quantization"]
+    # save_prediction_results(predict_metrics)
+
 
 def plot_random_predicted_events(results_dir, ground_truth, noisy, prediction, num_random_events, seed = 22):
     """
@@ -316,114 +419,6 @@ def print_testing_report(testing_metrics):
     print(f'{colored("Testing prediction time:", "blue")} {testing_prediction_time}s')
 
 
-def train_model(args):
-    """
-    Trains the model with the input data specified in the CLI arguments.
-
-    Args:
-        args: The object that contains all the parsed CLI arguments.
-    """
-
-    if not args.nn :
-        print("Training model 0")
-        from models.CnnDenoisingModel0 import CnnDenoisingModel0 as CnnDenoisingModel
-    elif args.nn == "0a":
-        print("Training model 0a")
-        from models.CnnDenoisingModel0a import CnnDenoisingModel0a  as CnnDenoisingModel
-    elif args.nn == "0b":
-        print("Training model 0b")
-        from models.CnnDenoisingModel0b import CnnDenoisingModel0b  as CnnDenoisingModel
-    elif args.nn == "0c":
-        print("Training model 0c")
-        from models.CnnDenoisingModel0c import CnnDenoisingModel0c  as CnnDenoisingModel
-    elif args.nn == "1":
-        print("Training model 1")
-        from models.CnnDenoisingModel1 import CnnDenoisingModel1  as CnnDenoisingModel
-    elif args.nn == "2":
-        print("Training model 2")
-        from models.CnnDenoisingModel2 import CnnDenoisingModel2 as CnnDenoisingModel
-
-
-    print(colored("\nReading input data...", "green"))
-
-    input_dict = read_input_data("train", args)
-    results_dir = args.results_dir.rstrip('/')+'/'
-    if not os.path.exists(results_dir):
-        os.mkdir(results_dir)
-
-    model = CnnDenoisingModel(input_dict=input_dict)
-
-    model.build_new_model()
-    training_metrics = model.train(input_dict)
-    training_metrics["results_dir"] = results_dir
-
-    model.save_model(results_dir+'cnn_autoenc')
-    print_training_report(training_metrics)
-    plot_train_val_graph(training_metrics)
-    print(colored(f'\nSaving training results to {results_dir}\n', "green"))
-
-
-def test_model(args):
-    """
-    Tests a model with the input data specified in the CLI arguments.
-
-    Args:
-        args: The object that contains all the parsed CLI arguments.
-    """
-
-    print(colored("\nReading input data...", "green"))
-    from models.CnnDenoisingModel0 import CnnDenoisingModel0 as CnnDenoisingModel
-
-    input_dict = read_input_data("test", args)
-    results_dir = args.results_dir.rstrip('/')+'/'
-    if not os.path.exists(results_dir):
-        os.mkdir(results_dir)
-
-    model = CnnDenoisingModel(input_dict=input_dict)
-
-    model.load_model(args.model_path)
-
-    testing_metrics = model.test(input_dict)
-    testing_metrics["input"] = input_dict["testing"]["data"]
-    testing_metrics["results_dir"] = results_dir
-
-    print_testing_report(testing_metrics)
-    plot_accuracy_histogram(testing_metrics)
-    plot_random_predicted_events(results_dir, input_dict["testing"]["labels"], input_dict["testing"]["data"], testing_metrics["predictions"], 6)
-    print(colored(f'\nSaving testing results to {results_dir}\n', "green"))
-
-
-def predict(args):
-    """
-    Uses a model for predicting values for input data read from a Parquet file.
-
-    Args:
-        args: The object that contains all the parsed CLI arguments.
-    """
-    print(colored("\nReading input data...", "green"))
-
-    input_dict = read_input_data("predict", args)
-    results_dir = args.results_dir.rstrip('/')+'/'
-    if not os.path.exists(results_dir):
-        os.mkdir(results_dir)
-
-    model = CnnDenoisingModel(input_dict=input_dict)
-
-    model.load_model(args.model_path)
-    predict_metrics = model.predict(input_dict)
-    # predict_metrics["results_dir"] = results_dir
-    denoised = predict_metrics["predictions"]
-    raw = input_dict["prediction"]["data"]
-    clean = input_dict["prediction"]["labels"]
-
-    write_raw_clean_denoised_to_svm(results_dir+"prediction.lsvm", raw, clean, denoised, 4032)
-
-    # predict_metrics["input_data"] = input_dict["prediction"]["data"]
-    # predict_metrics["num_planes"] = input_dict["configuration"]["total_planes"]
-    # predict_metrics["path_to_df"] = input_dict["prediction"]["input"]
-    # predict_metrics["quantization"] = input_dict["prediction"]["quantization"]
-    # save_prediction_results(predict_metrics)
-
 def save_prediction_results(predict_metrics):
     """
     Creates a new dataset clean from the noisy hits and stores it into parquet format
@@ -439,7 +434,6 @@ def save_prediction_results(predict_metrics):
     num_planes = predict_metrics["num_planes"]
     quantization = predict_metrics["quantization"]
     results_dir = predict_metrics["results_dir"]
-
 
     predictions = predictions.reshape((-1, num_planes, (predictions.shape[-3])//num_planes, predictions.shape[-2]))
     data = data.reshape((-1, num_planes, (data.shape[-3])//num_planes, data.shape[-2]))
