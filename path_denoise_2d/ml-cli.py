@@ -178,6 +178,15 @@ def train_model(args):
     elif args.nn == "0c":
         print("Training model 0c")
         from models.CnnDenoisingModel0c import CnnDenoisingModel0c as CnnDenoisingModel
+    elif args.nn == "0d":
+        print("Training model 0d")
+        from models.CnnDenoisingModel0d import CnnDenoisingModel0d as CnnDenoisingModel
+    elif args.nn == "0e":
+        print("Training model 0e")
+        from models.CnnDenoisingModel0e import CnnDenoisingModel0e as CnnDenoisingModel
+    elif args.nn == "0f":
+        print("Training model 0f")
+        from models.CnnDenoisingModel0f import CnnDenoisingModel0f as CnnDenoisingModel
     elif args.nn == "1":
         print("Training model 1")
         from models.CnnDenoisingModel1 import CnnDenoisingModel1 as CnnDenoisingModel

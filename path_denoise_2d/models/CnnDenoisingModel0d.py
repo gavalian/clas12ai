@@ -5,7 +5,7 @@ from tensorflow.keras.models import Sequential
 from models.CnnDenoisingModelBase import CnnDenoisingModelBase
 
 
-class CnnDenoisingModel0b(CnnDenoisingModelBase):
+class CnnDenoisingModel0d(CnnDenoisingModelBase):
     """
     A denoising convolutional neural network Keras regressor.
     """
@@ -25,6 +25,8 @@ class CnnDenoisingModel0b(CnnDenoisingModelBase):
         k_model.add(tf.keras.layers.Conv2D(54, kernel_size=(4, 3), activation='relu', padding="same"))
         k_model.add(tf.keras.layers.Conv2D(54, kernel_size=(4, 3), activation='relu', padding="same"))
         k_model.add(tf.keras.layers.UpSampling2D((2, 2)))
+        k_model.add(tf.keras.layers.Conv2D(54, kernel_size=(4, 3), activation='relu', padding="same"))
+        k_model.add(tf.keras.layers.Conv2D(54, kernel_size=(4, 3), activation='relu', padding="same"))
         k_model.add(tf.keras.layers.Conv2D(1, kernel_size=(4, 3), activation='sigmoid', padding="same"))
         k_model.summary()
 

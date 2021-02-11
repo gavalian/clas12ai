@@ -2,7 +2,6 @@ import numpy as np
 from termcolor import colored
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from models.AbstractKerasRegressor import AbstractKerasRegressor
 from models.CnnDenoisingModelBase import CnnDenoisingModelBase
 
 
