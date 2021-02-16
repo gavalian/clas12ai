@@ -99,7 +99,7 @@ def plot_predicted_events(results_dir, noisy, prediction, i, seed = 22):
     plt.imsave(results_dir+'noisy_'+str(i)+'.png', noisy.reshape(img_shape))
     plt.imsave(results_dir+'denoised_'+str(i)+'.png', (prediction.reshape(img_shape)>0.5).astype(int))
 
-def plot_noise_reduction(path, predictions, raw_input, threshold = 0.5):
+def plot_noise_reduction(path, predictions, raw_input, ground_truth, threshold = 0.5):
     '''
     Generates a histogram of noised added to the reconstructed hits
 
@@ -115,8 +115,8 @@ def plot_noise_reduction(path, predictions, raw_input, threshold = 0.5):
 
     unique = np.zeros((raw_input.shape[0], 1))
     i = 0
-    for a1, a2 in zip(raw_input, predictions):
-        unique[i] = ((np.nonzero(a1)[0].shape[0] - np.nonzero(a2)[0].shape[0])/ np.nonzero(a1)[0].shape[0]) *100
+    for a1, a2, a3 in zip(raw_input, predictions, ground_truth):
+        unique[i] = (((np.nonzero(a1)[0].shape[0] - np.intersect1d(np.nonzero(a1)[0], np.nonzero(a3)[0]).shape[0]) - (np.nonzero(a2)[0].shape[0] - np.intersect1d(np.nonzero(a2)[0], np.nonzero(a3)[0]).shape[0]))/ (np.nonzero(a1)[0].shape[0] - np.intersect1d(np.nonzero(a1)[0], np.nonzero(a3)[0]).shape[0])  ) *100
         # if np.nonzero(a2)[0].shape[0] > np.nonzero(a1)[0].shape[0]:
         #     plot_predicted_events("./test/", a1, a2, i)
         i += 1

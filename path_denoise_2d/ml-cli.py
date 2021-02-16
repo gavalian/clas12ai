@@ -308,7 +308,7 @@ def plot_accuracy_histogram(testing_metrics):
 
     hits_stats = hm.plot_hits(results_dir+'hits_histogram.png', predictions, ground_truth)
     noise_stats = hm.plot_noise(results_dir+'noise_histogram.png', predictions, ground_truth)
-    noise_reduction_stats = hm.plot_noise_reduction(results_dir+'noise_reduction_histogram.png', predictions, raw_input)
+    noise_reduction_stats = hm.plot_noise_reduction(results_dir+'noise_reduction_histogram.png', predictions, raw_input, ground_truth)
     
     
     cases = hits_stats["num"]
