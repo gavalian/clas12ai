@@ -120,26 +120,26 @@ def read_input_data(input_type, args) -> dict:
 
     if input_type == "train":
         # Read training and testing data
-        X_train, y_train = read_svm_to_X_Y_datasets(args.training_file_path, 4032)
-        X_test, y_test = read_svm_to_X_Y_datasets(args.testing_file_path, 4032)
+        X_train, y_train, train_tracks_per_event = read_svm_to_X_Y_datasets(args.training_file_path, 4032)
+        X_test, y_test, test_tracks_per_event = read_svm_to_X_Y_datasets(args.testing_file_path, 4032)
 
         return {
-            "training": {"data": X_train, "labels": y_train, "epochs": args.epochs, "batch_size": args.batch_size},
-            "testing": {"data": X_test, "labels": y_test, "batch_size": args.batch_size},
+            "training": {"data": X_train, "labels": y_train, "tracks_per_event": train_tracks_per_event ,"epochs": args.epochs, "batch_size": args.batch_size},
+            "testing": {"data": X_test, "labels": y_test, "tracks_per_event": test_tracks_per_event , "batch_size": args.batch_size},
             "configuration": {"layers": 36, "sensors_per_layer": 112}
         }
 
     elif input_type == "test":
         # Read testing data
-        X_test, y_test = read_svm_to_X_Y_datasets(args.testing_file_path, 4032)
+        X_test, y_test, test_tracks_per_event = read_svm_to_X_Y_datasets(args.testing_file_path, 4032)
 
         return {
-            "testing": {"data": X_test, "labels": y_test, "batch_size": args.batch_size},
+            "testing": {"data": X_test, "labels": y_test, "tracks_per_event": test_tracks_per_event , "batch_size": args.batch_size},
             "configuration": {"layers": 36, "sensors_per_layer": 112}
         }
 
     elif input_type == "predict":
-        X_test, y_test = read_svm_to_X_Y_datasets(args.prediction_file_path, 4032)
+        X_test, y_test, predict_tracks_per_event = read_svm_to_X_Y_datasets(args.prediction_file_path, 4032)
 
         return {
             "prediction": {"data": X_test, "labels": y_test},
@@ -227,6 +227,7 @@ def test_model(args):
     testing_metrics = model.test(input_dict)
     testing_metrics["input"] = input_dict["testing"]["data"]
     testing_metrics["results_dir"] = results_dir
+    testing_metrics["tracks_per_sample"] = input_dict["testing"]["tracks_per_event"]
 
     print_testing_report(testing_metrics)
     plot_accuracy_histogram(testing_metrics)
@@ -309,15 +310,16 @@ def plot_accuracy_histogram(testing_metrics):
     hits_stats = hm.plot_hits(results_dir+'hits_histogram.png', predictions, ground_truth)
     noise_stats = hm.plot_noise(results_dir+'noise_histogram.png', predictions, ground_truth)
     noise_reduction_stats = hm.plot_noise_reduction(results_dir+'noise_reduction_histogram.png', predictions, raw_input, ground_truth)
+    hits_per_segment = hm.plot_hits_per_segment(results_dir+'hits_per_segment.png', predictions, ground_truth, testing_metrics["tracks_per_sample"])
     
     
-    cases = hits_stats["num"]
+    cases = hits_per_segment["num"]
     hits_max = hits_stats["max"]
     hits_min = hits_stats["min"]
     hits_mean = hits_stats["mean"]
     hits_rms = hits_stats["rms"]
 
-    print(f'{colored("Total number of cases:", "blue")} {cases}')
+    print(f'{colored("Total number of tracks:", "blue")} {int(cases)}')
     print(f'{colored("Hits Minimum value(%):", "blue")} {hits_min}')
     print(f'{colored("Hits Maximum value(%)::", "blue")} {hits_max}')
     print(f'{colored("Hits Mean value(%)::", "blue")} {hits_mean}')
@@ -344,6 +346,13 @@ def plot_accuracy_histogram(testing_metrics):
     print(f'{colored("Noise Reduction Mean value(%)::", "blue")} {noise_reduction_mean}')
     print(f'{colored("Noise Reduction RMS value(%)::", "blue")} {noise_reduction_rms}')
 
+    reconstruct_6_super_layers = hits_per_segment["valid-6"]
+    reconstruct_5_super_layers = hits_per_segment["valid-5"]
+    reconstruct_4_super_layers = hits_per_segment["valid-4"]
+
+    # print(f'{colored('Reconstructed from 6 superlayers(%): ',"blue")}  {(reconstruct_6_super_layers / cases) * 100)}' )
+    # print(f'{colored('Reconstructed from 5 superlayers(%): ',"blue")}  {(reconstruct_5_super_layers / cases) * 100)}' )
+    # print(f'{colored('Reconstructed from 4 superlayers(%): ',"blue")}  {(reconstruct_4_super_layers / cases) * 100)}' )
 
 
     with open(results_dir + 'testing_report.txt','a+') as f:
@@ -360,6 +369,14 @@ def plot_accuracy_histogram(testing_metrics):
         f.write('Noise Reduction Maximum value(%): ' + str(noise_reduction_max) + '\n')
         f.write('Noise Reduction Mean value(%): ' + str(noise_reduction_mean) + '\n')
         f.write('Noise Reduction RMS value(%): ' + str(noise_reduction_rms) + '\n')
+
+        f.write('Reconstructed from 6 superlayers: ' + str(reconstruct_6_super_layers) + '\n')
+        f.write('Reconstructed from 5 superlayers: ' + str(reconstruct_5_super_layers) + '\n')
+        f.write('Reconstructed from 4 superlayers: ' + str(reconstruct_4_super_layers) + '\n')
+
+        f.write('Reconstructed from 6 superlayers(%): ' + str((reconstruct_6_super_layers / cases) * 100) + '\n')
+        f.write('Reconstructed from 5 superlayers(%): ' + str((reconstruct_5_super_layers / cases) * 100) + '\n')
+        f.write('Reconstructed from 4 superlayers(%): ' + str((reconstruct_4_super_layers / cases) * 100) + '\n')
 
 
 def plot_train_val_graph(training_metrics):

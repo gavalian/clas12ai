@@ -40,17 +40,19 @@ def read_svm_to_X_Y_datasets(filename, num_features):
     features, labels = read_svm_file(filename, num_features)
     valid = []
     invalid = []
+    tracks_per_event = []
 
     for v, array in zip(labels, features):
         if v != 0:
             valid.append(array)
+            tracks_per_event.append(v)
         else:
             invalid.append(array)
 
     valid = np.array(np.vstack(valid)).reshape(-1, 36, 112, 1)
     invalid = np.array(np.vstack(invalid)).reshape(-1, 36, 112, 1)
 
-    return invalid, valid
+    return invalid, valid, tracks_per_event
 
 
 def write_raw_clean_denoised_to_svm(filename, raw, clean, denoised, num_features):
