@@ -35,22 +35,23 @@ def bar_charts(bar_6, bar_5, bar_4, x_label, y_label, filename):
     plt.tight_layout()
     plt.savefig(filename)
 
-n = "/path/to/csv/file.csv"
-output = "/path/to/destination/file.pdf"
-with open(n) as file:
-   reader = csv.reader(file)
-   i = 0
-   segs = [[], [], []]
-   next(reader)
+# Example
+# n = "/path/to/csv/file.csv"
+# output = "/path/to/destination/file.pdf"
+# with open(n) as file:
+#    reader = csv.reader(file)
+#    i = 0
+#    segs = [[], [], []]
+#    next(reader)
 
-   for row in reader:
-       for col in [3, 2, 1]:
-           segs[-col].append(float(row[-col])/float(row[-4])*100)
-           i += 1
+#    for row in reader:
+#        for col in [3, 2, 1]:
+#            segs[-col].append(float(row[-col])/float(row[-4])*100)
+#            i += 1
 
-   x_label = "Luminosity (nA)"
-   y_label = "Reconstructions"
-   bar_charts(np.array(segs[-3]), np.array(segs[-2]), np.array(segs[-1]), x_label, y_label, output)
+#    x_label = "Luminosity (nA)"
+#    y_label = "Reconstructions"
+#    bar_charts(np.array(segs[-3]), np.array(segs[-2]), np.array(segs[-1]), x_label, y_label, output)
 
 
 
