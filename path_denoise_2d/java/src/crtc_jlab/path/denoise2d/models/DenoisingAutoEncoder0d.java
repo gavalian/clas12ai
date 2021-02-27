@@ -54,7 +54,7 @@ public class DenoisingAutoEncoder0d extends AbstractCnnDenoisingAutoEncoder{
 	            
 	            .layer(new Upsampling2D.Builder().size(2).build())
 //	            .layer(new OutputLayer.Builder().)
-	            .layer(new ConvolutionLayer.Builder().kernelSize(4,3).stride(1,1).activation(Activation.SIGMOID).convolutionMode(ConvolutionMode.Same)
+	            .layer(new ConvolutionLayer.Builder().kernelSize(4,3).stride(1,1).activation(Activation.RELU).convolutionMode(ConvolutionMode.Same)
 	                    .nOut(54).build())
 	            .layer(new ConvolutionLayer.Builder().kernelSize(4,3).stride(1,1).activation(Activation.SIGMOID).convolutionMode(ConvolutionMode.Same)
 	                    .nOut(1).build())
