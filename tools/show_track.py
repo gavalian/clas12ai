@@ -30,5 +30,5 @@ while sample_id != -1:
     ax1.imshow(img_noisy)
     ax2.imshow(img_clean)
 
-    plt.show()
+#    plt.savefig("img.png")
     sample_id = int(input("Please enter a sample id to display in range 0 - "+str(len(labels)/2)+ " or -1 to exit\n"))

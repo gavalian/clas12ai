@@ -6,6 +6,13 @@ def rmsd(v, mean_value):
     v_mean = mean_value
     return np.sqrt(np.mean(((v-v_mean)**2)))
 
+def plot_mean_with_error(path, mean, error):
+    plt.axvline(mean, color='k', linestyle='dashed', linewidth=1)
+    min_ylim, max_ylim = plt.ylim()
+    plt.text(mean+1, max_ylim*0.97, 'Mean')
+    plt.errorbar(mean, max_ylim*0.75, xerr = error,capsize=3, fmt='k')
+    plt.savefig(path.replace("histogram","histogram_with_mean"))
+
 def plot_hits(path, predictions, ground_truth, threshold = 0.5):
     '''
     Generates a histogram of correctly reconstructed hits
@@ -35,11 +42,12 @@ def plot_hits(path, predictions, ground_truth, threshold = 0.5):
     plt.savefig(path)
     mean_value = mean(unique)
     rms = rmsd(unique, mean_value)
-    plt.axvline(mean_value, color='k', linestyle='dashed', linewidth=1)
-    min_ylim, max_ylim = plt.ylim()
-    plt.text(mean_value*1.1, max_ylim*0.9, 'Mean: {:.2f}'.format(mean_value))
-    plt.errorbar(mean_value, max_ylim*0.75, xerr = rms,capsize=3, fmt='k')
-    plt.savefig(path.replace("histogram","histogram_with_mean"))
+    plot_mean_with_error(path, mean_value, rms)
+    # plt.axvline(mean_value, color='k', linestyle='dashed', linewidth=1)
+    # min_ylim, max_ylim = plt.ylim()
+    # plt.text(mean_value*1.1, max_ylim*0.9, 'Mean: {:.2f}'.format(mean_value))
+    # plt.errorbar(mean_value, max_ylim*0.75, xerr = rms,capsize=3, fmt='k')
+    # plt.savefig(path.replace("histogram","histogram_with_mean"))
 #    print('Total number of cases: '+ str(ground_truth.shape[0]))
 #    print('Hits Minimum value(%): ' + str(unique.min()))
 #    print('Hits Maximum value(%): ' + str(unique.max()))
@@ -79,11 +87,13 @@ def plot_noise(path, predictions, ground_truth, threshold = 0.5):
     plt.savefig(path)
     mean_value = mean(unique)
     rms = rmsd(unique, mean_value)
-    plt.axvline(mean_value, color='k', linestyle='dashed', linewidth=1)
-    min_ylim, max_ylim = plt.ylim()
-    plt.text(mean_value*1.1, max_ylim*0.9, 'Mean: {:.2f}'.format(mean_value))
-    plt.errorbar(mean_value, max_ylim*0.75, xerr = rms,capsize=3, fmt='k')
-    plt.savefig(path.replace("histogram","histogram_with_mean"))
+    plot_mean_with_error(path, mean_value, rms)
+
+    # plt.axvline(mean_value, color='k', linestyle='dashed', linewidth=1)
+    # min_ylim, max_ylim = plt.ylim()
+    # plt.text(mean_value+1, max_ylim*0.95, 'Mean: {:.2f}'.format(mean_value))
+    # plt.errorbar(mean_value, max_ylim*0.75, xerr = rms,capsize=3, fmt='k')
+    # plt.savefig(path.replace("histogram","histogram_with_mean"))
 
 
     return {
@@ -144,11 +154,13 @@ def plot_noise_reduction(path, predictions, raw_input, ground_truth, threshold =
     plt.savefig(path)
     mean_value = mean(unique)
     rms = rmsd(unique, mean_value)
-    plt.axvline(mean_value, color='k', linestyle='dashed', linewidth=1)
-    min_ylim, max_ylim = plt.ylim()
-    plt.text(mean_value*1.1, max_ylim*0.9, 'Mean: {:.2f}'.format(mean_value))
-    plt.errorbar(mean_value, max_ylim*0.75, xerr = rms,capsize=3, fmt='k')
-    plt.savefig(path.replace("histogram","histogram_with_mean"))
+    plot_mean_with_error(path, mean_value, rms)
+
+    # plt.axvline(mean_value, color='k', linestyle='dashed', linewidth=1)
+    # min_ylim, max_ylim = plt.ylim()
+    # plt.text(mean_value*1.1, max_ylim*0.9, 'Mean: {:.2f}'.format(mean_value))
+    # plt.errorbar(mean_value, max_ylim*0.75, xerr = rms,capsize=3, fmt='k')
+    # plt.savefig(path.replace("histogram","histogram_with_mean"))
 
 
     return {

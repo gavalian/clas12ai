@@ -2,7 +2,7 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 def bar_charts(bar_6, bar_5, bar_4, x_label, y_label, filename):
-    # Numbers of pairs of bars you want
+    # Numbers of groups of bars you want
     N = 6
 
     # Data on X-axis
