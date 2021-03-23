@@ -1,6 +1,7 @@
 package org.crtcjlab.denoise2d.models;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -53,11 +54,10 @@ public class DenoisingAutoEncoder0 extends AbstractCnnDenoisingAutoEncoder {
                 .layer(new ConvolutionLayer.Builder().kernelSize(4, 6).stride(1, 1).activation(Activation.SIGMOID).convolutionMode(ConvolutionMode.Same)
                         .nOut(1).build())
                 .layer(new CnnLossLayer.Builder().activation(Activation.IDENTITY).lossFunction(LossFunction.XENT).build())
-                .setInputType(InputType.convolutional(height, width, channels))
+                .setInputType(InputType.convolutional(height, width, channels, CNN2DFormat.NHWC))
                 .build();
 
         model = new MultiLayerNetwork(conf);
         model.init();
-        System.out.println(model.summary(InputType.convolutional(height, width, channels)));
     }
 }

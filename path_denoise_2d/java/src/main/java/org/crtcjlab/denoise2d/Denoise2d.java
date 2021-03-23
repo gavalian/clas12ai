@@ -5,9 +5,11 @@ import net.sourceforge.argparse4j.inf.*;
 import org.crtcjlab.denoise2d.dataset.LsvmDataSet;
 import org.crtcjlab.denoise2d.models.AbstractCnnDenoisingAutoEncoder;
 import org.crtcjlab.denoise2d.models.DenoisingAutoEncoder;
-import org.crtcjlab.denoise2d.models.DenoisingAutoEncoder0;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 
 import java.io.File;
+import java.io.IOException;
 
 public class Denoise2d {
     private static Namespace Args;
@@ -16,98 +18,204 @@ public class Denoise2d {
         parseArgs(args);
         String subCommand = Args.get("subcommand");
 
+        // Run subcommand
         if (subCommand.equals("train")) {
-            String trainDataPath = Args.getString("training_file");
-            String validationDataPath = Args.getString("validation_file");
-            String resultsDir = Args.getString("results_dir");
-            String network = Args.getString("network");
-            int batchSize = Args.getInt("batch_size");
-            int nEpochs = Args.getInt("epochs");
-
-            System.out.println("===== Reading  dataset in: " + trainDataPath + "... =====");
-            LsvmDataSet trainingLsvmData = new LsvmDataSet(trainDataPath, 4032, 1, false);
-            trainingLsvmData.readData(batchSize, 3, new int[]{0}, new int[]{1, 2}, new long[]{-1, 1, 36, 112});
-            System.out.println("===== Done =====");
-//			INDArray features = trainingLsvmData.getNextFeaturesBatch();
-//			System.out.println(features.slice(0));
-//			System.out.println(features.slice(0).shapeInfoToString());
-//			System.out.println(features.slice(0).slice(0).slice(0).getInt(35));
-//			System.out.println(features.slice(0).slice(0).slice(0).getInt(36));
-//			System.out.println(features.slice(0).slice(0).slice(1).getInt(37));
-//			System.out.println(features.slice(0).slice(0).slice(0).getInt(260));
-//			System.out.println(features.slice(0).slice(0).slice(0).getInt(261));
-//			System.exit(1);
-            AbstractCnnDenoisingAutoEncoder denoising_ae = DenoisingAutoEncoder.getAutoEncoderByName(network);
-            System.out.println("===== Training using model architecture: " + network + " =====");
-
-            denoising_ae.buildModel();
-            File file = new File(resultsDir);
-            boolean success = true;
-            if (!file.exists()) {
-                success = file.mkdir();
-            }
-            if (success) {
-                denoising_ae.train(trainingLsvmData, nEpochs);
-                denoising_ae.saveModel(resultsDir + "cnn_autoenc" + network + ".h5");
-            } else {
-                System.out.println("Failed to open/create directory to save results!");
-                System.exit(1);
-            }
-
-            if (!validationDataPath.isEmpty()) {
-                LsvmDataSet validationLsvmData = new LsvmDataSet(validationDataPath, 4032, 1, false);
-                validationLsvmData.readData(batchSize, 3, new int[]{0}, new int[]{1, 2}, new long[]{-1, 1, 36, 112});
-                denoising_ae.test(validationLsvmData);
-            }
+            train();
         } else if (subCommand.equals("test")) {
-            String testingDataPath = Args.getString("testing_file");
-//			String resultsDir = Args.getString("results_dir");
-            String modelPath = Args.getString("model");
-            int batchSize = Args.getInt("batch_size");
-
-            System.out.println("===== Testing using model at: " + modelPath + " =====");
-
-            LsvmDataSet testingLsvmData = new LsvmDataSet(testingDataPath, 4032, 1, false);
-            testingLsvmData.readData(batchSize, 3, new int[]{0}, new int[]{1, 2}, new long[]{-1, 1, 36, 112});
-            DenoisingAutoEncoder denoising_ae = new DenoisingAutoEncoder();
-            File file = new File(modelPath);
-            boolean success = true;
-            if (!file.exists()) {
-                success = file.mkdir();
-            }
-            if (success) {
-                denoising_ae.loadModel(modelPath);
-                denoising_ae.test(testingLsvmData);
-            } else {
-                System.out.println("Failed to open/create directory to save results!");
-                System.exit(1);
-            }
-
+            test();
         } else if (subCommand.equals("predict")) {
-            String predictionDataPath = Args.getString("prediction_file");
-            String resultsDir = Args.getString("results_dir");
-            String modelPath = Args.getString("model");
-            int batchSize = Args.getInt("batch_size");
+            predict();
+        } else {
+            System.out.println("Unexpected subcommand given. Quitting.");
+            System.exit(1);
+        }
+    }
 
-            System.out.println("===== Predicting using model at: " + modelPath + " =====");
+    public static void train() {
+        final String trainDataPath = Args.getString("training_file");
+        final String validationDataPath = Args.getString("validation_file");
+        final String resultsDir = Args.getString("results_dir");
+        final String network = Args.getString("network");
+        final int batchSize = Args.getInt("batch_size");
+        final int nEpochs = Args.getInt("epochs");
 
-            LsvmDataSet predictionLsvmData = new LsvmDataSet(predictionDataPath, 4032, 1, false);
-            predictionLsvmData.readData(batchSize, 3, new int[]{0}, new int[]{1, 2}, new long[]{-1, 1, 36, 112});
-            DenoisingAutoEncoder0 denoising_ae = new DenoisingAutoEncoder0();
-            denoising_ae.loadModel(modelPath);
-            File file = new File(resultsDir);
-            boolean success = true;
-            if (!file.exists()) {
-                success = file.mkdir();
-            }
-            if (success) {
-                denoising_ae.predict(predictionLsvmData, resultsDir);
-            } else {
-                System.out.println("Failed to open/create directory to save results!");
+        // Read LSVM data
+        System.out.println("===== Reading  dataset in: " + trainDataPath + "... =====");
+        LsvmDataSet trainingLsvmData = null;
+        try {
+            trainingLsvmData = new LsvmDataSet(trainDataPath, 4032, 1, false);
+            trainingLsvmData.readData(batchSize, 3, new int[]{0}, new int[]{1, 2}, new long[]{-1, 36, 112, 1});
+        } catch (IOException e) {
+            System.err.println("Error: Failed to read training LSVM dataset.");
+            e.printStackTrace();
+            System.exit(1);
+        } catch (InterruptedException e) {
+            System.err.println("Error: LSVM training dataset reading was interrupted.");
+            e.printStackTrace();
+            System.exit(1);
+        }
+        System.out.println("===== Done =====");
+
+        // Compile model
+        AbstractCnnDenoisingAutoEncoder model = DenoisingAutoEncoder.getAutoEncoderByName(network);
+        System.out.println("===== Training using model architecture: " + network + " =====");
+        model.buildModel();
+
+        // Check if results directory exists, otherwise try to create it
+        File file = new File(resultsDir);
+        boolean success = true;
+        if (!file.exists()) {
+            success = file.mkdir();
+        }
+
+        // Train and save model
+        if (success) {
+            model.train(trainingLsvmData, nEpochs);
+
+            try {
+                model.saveModel(resultsDir + "cnn_autoenc" + network + ".h5");
+            } catch (IOException e) {
+                System.err.println("Error: Failed to save Keras model.");
+                e.printStackTrace();
                 System.exit(1);
             }
         } else {
-            System.out.println("Unexpected subcommand given. Quitting.");
+            System.out.println("Failed to open/create directory to save results!");
+            System.exit(1);
+        }
+
+        // Validate model
+        if (!validationDataPath.isEmpty()) {
+            LsvmDataSet validationLsvmData = null;
+            try {
+                validationLsvmData = new LsvmDataSet(validationDataPath, 4032, 1, false);
+                validationLsvmData.readData(batchSize, 3, new int[]{0}, new int[]{1, 2}, new long[]{-1, 36, 112, 1});
+            } catch (IOException e) {
+                System.err.println("Error: Failed to read validation LSVM dataset.");
+                e.printStackTrace();
+                System.exit(1);
+            } catch (InterruptedException e) {
+                System.err.println("Error: LSVM validation dataset reading was interrupted.");
+                e.printStackTrace();
+                System.exit(1);
+            }
+
+            model.test(validationLsvmData);
+        }
+    }
+
+    public static void test() {
+        final String testingDataPath = Args.getString("testing_file");
+        final String resultsDir = Args.getString("results_dir");
+        final String modelConfigPath = Args.getString("model_config");
+        final String modelWeightsPath = Args.getString("model_weights");
+        final int batchSize = Args.getInt("batch_size");
+        final int paddingX = Args.getInt("px");
+        final int paddingY = Args.getInt("py");
+
+        System.out.println("======= Testing =======");
+        System.out.println("Model configuration: " + modelConfigPath);
+        System.out.println("Model weights: " + modelWeightsPath);
+
+        // Read LSVM data
+        LsvmDataSet testingLsvmData = null;
+        try {
+            testingLsvmData = new LsvmDataSet(testingDataPath, 4032, 1, false);
+            testingLsvmData.readData(batchSize, 3, new int[]{0}, new int[]{1, 2}, new long[]{-1, 36, 112, 1});
+        } catch (IOException e) {
+            System.err.println("Error: Failed to read testing LSVM dataset.");
+            e.printStackTrace();
+            System.exit(1);
+        } catch (InterruptedException e) {
+            System.err.println("Error: LSVM testing dataset reading was interrupted.");
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        // Check if results directory exists, otherwise try to create it
+        File file = new File(resultsDir);
+        boolean success = true;
+        if (!file.exists()) {
+            success = file.mkdir();
+        }
+
+        // Load and test model
+        if (success) {
+            DenoisingAutoEncoder model = new DenoisingAutoEncoder();
+
+            try {
+                model.loadKerasModel(modelConfigPath, modelWeightsPath);
+            } catch (IOException | UnsupportedKerasConfigurationException | InvalidKerasConfigurationException e) {
+                System.err.println("Error: Failed to load Keras model for testing.");
+                e.printStackTrace();
+                System.exit(1);
+            }
+
+            System.out.println("Preprocessing dataset");
+            model.preprocessDataset(testingLsvmData, paddingX, paddingY);
+            System.out.println("Finished preprocessing");
+
+            model.test(testingLsvmData);
+        } else {
+            System.out.println("Failed to open/create directory to save results!");
+            System.exit(1);
+        }
+    }
+
+    public static void predict() {
+        final String predictionDataPath = Args.getString("prediction_file");
+        final String resultsDir = Args.getString("results_dir");
+        final String modelConfigPath = Args.getString("model_config");
+        final String modelWeightsPath = Args.getString("model_weights");
+        final int batchSize = Args.getInt("batch_size");
+        final int paddingX = Args.getInt("px");
+        final int paddingY = Args.getInt("py");
+
+        System.out.println("======= Prediction =======");
+        System.out.println("Model configuration: " + modelConfigPath);
+        System.out.println("Model weights: " + modelWeightsPath);
+
+        // Read LSVM data
+        LsvmDataSet predictionLsvmData = null;
+        try {
+            predictionLsvmData = new LsvmDataSet(predictionDataPath, 4032, 1, false);
+            predictionLsvmData.readData(batchSize, 3, new int[]{0}, new int[]{1, 2}, new long[]{-1, 36, 112, 1});
+        } catch (IOException e) {
+            System.err.println("Error: Failed to read prediction LSVM dataset.");
+            e.printStackTrace();
+            System.exit(1);
+        } catch (InterruptedException e) {
+            System.err.println("Error: LSVM prediction dataset reading was interrupted.");
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        // Check if results directory exists, otherwise try to create it
+        File file = new File(resultsDir);
+        boolean success = true;
+        if (!file.exists()) {
+            success = file.mkdir();
+        }
+
+        // Load model and predict
+        if (success) {
+            DenoisingAutoEncoder model = new DenoisingAutoEncoder();
+
+            try {
+                model.loadKerasModel(modelConfigPath, modelWeightsPath);
+            } catch (IOException | UnsupportedKerasConfigurationException | InvalidKerasConfigurationException e) {
+                System.err.println("Error: Failed to load Keras model for prediction.");
+                e.printStackTrace();
+                System.exit(1);
+            }
+
+            System.out.println("Preprocessing dataset");
+            model.preprocessDataset(predictionLsvmData, paddingX, paddingY);
+            System.out.println("Finished preprocessing");
+
+            model.predict(predictionLsvmData, resultsDir, paddingX, paddingY);
+        } else {
+            System.out.println("Failed to open/create directory to save results!");
             System.exit(1);
         }
     }
@@ -120,6 +228,7 @@ public class Denoise2d {
         Subparsers subparsers = parser.addSubparsers().help("Run the training, testing or predicting sub-command");
         subparsers.dest("subcommand");
 
+        // Training arguments
         Subparser trainingParser = subparsers.addParser("train").help("Train a model, perform testing, and serialize it.");
         trainingParser.addArgument("--training-file", "-t").required(true).type(String.class).help("Path to the SVM file containing the training data.");
         trainingParser.addArgument("--validation-file", "-v").setDefault("").type(String.class).help("Path to the SVM file containing the validation data.");
@@ -128,18 +237,25 @@ public class Denoise2d {
         trainingParser.addArgument("--batch-size", "-b").setDefault(16).type(Integer.class).help("Size of the training batch.");
         trainingParser.addArgument("--network", "-n").setDefault("0b").type(String.class).help("Neural network architecture to use.");
 
+        // Testing arguments
         Subparser testingParser = subparsers.addParser("test").help("Load a model for testing.");
         testingParser.addArgument("--testing-file", "-t").required(true).type(String.class).help("Path to the SVM file containing the testing data.");
-        testingParser.addArgument("--model", "-m").required(true).type(String.class).help("Trained model to load for testing.");
+        testingParser.addArgument("--model-config").required(true).type(String.class).help("Path to model JSON configuration file.");
+        testingParser.addArgument("--model-weights").required(true).type(String.class).help("Path to model weights HDF5 file.");
         testingParser.addArgument("--results-dir", "-r").required(true).type(String.class).help("Path to the directory to store the testing related results.");
         testingParser.addArgument("--batch-size", "-b").setDefault(16).type(Integer.class).help("Size of the training batch.");
+        testingParser.addArgument("--px").setDefault(0).type(Integer.class).help("Padding along the x dimension. Applied in both left and right sides.");
+        testingParser.addArgument("--py").setDefault(0).type(Integer.class).help("Padding along the y dimension. Applied in both top and bottom sides.");
 
-
+        // Prediction arguments
         Subparser predictionParser = subparsers.addParser("predict").help("Load a model and use it for predictions.");
         predictionParser.addArgument("--prediction-file", "-p").required(true).type(String.class).help("Path to the SVM file containing the prediction data.");
-        predictionParser.addArgument("--model", "-m").required(true).type(String.class).help("Trained model to load for prediction.");
+        predictionParser.addArgument("--model-config").required(true).type(String.class).help("Path to model JSON configuration file.");
+        predictionParser.addArgument("--model-weights").required(true).type(String.class).help("Path to model weights HDF5 file.");
         predictionParser.addArgument("--results-dir", "-r").required(true).type(String.class).help("Path to the directory to store the testing related results.");
         predictionParser.addArgument("--batch-size", "-b").setDefault(16).type(Integer.class).help("Size of the training batch.");
+        predictionParser.addArgument("--px").setDefault(0).type(Integer.class).help("Padding along the x dimension. Applied in both left and right sides.");
+        predictionParser.addArgument("--py").setDefault(0).type(Integer.class).help("Padding along the y dimension. Applied in both top and bottom sides.");
 
         try {
             Args = parser.parseArgs(args);
