@@ -82,6 +82,12 @@ def parse_arguments():
     parser_test_optional_args.add_argument("--batch-size", "-b", required=False, type=int, default="8",
                                            help="Size of the evaluation batch.", dest="batch_size")
 
+    #parser_test_optional_args.add_argument("--px", required=False, type=int, default=0,
+    #                                        help="X axis zero padding (width). Both the left and right sides of the input will have this padding applied.", dest="padding_x")
+
+    #parser_test_optional_args.add_argument("--py", required=False, type=int, default=0,
+    #                                        help="Y axis zero padding (height). Both the top and bottom sides of the input will have this padding applied.", dest="padding_y")
+
     # Create prediction subprogram parser
     parser_predict = subparsers.add_parser("predict", help="Load a model and use it for predictions.")
     parser_predict._action_groups.pop()
@@ -97,11 +103,18 @@ def parse_arguments():
                                               dest="model_path")
 
     parser_predict_required_args.add_argument("--results-dir", "-r", required=True,
-                                            help="Path to the directory to store results.",
-                                            dest="results_dir")
+                                              help="Path to the directory to store results.",
+                                              dest="results_dir")
 
     parser_predict_optional_args.add_argument("--batch-size", "-b", required=False, type=int, default="32",
                                               help="Size of the prediction batch.", dest="prediction_batch_size")
+
+    #parser_predict_optional_args.add_argument("--px", required=False, type=int, default=0,
+    #                                       help="X axis zero padding (width). Both the left and right sides of the input will have this padding applied.", dest="padding_x")
+
+    #parser_predict_optional_args.add_argument("--py", required=False, type=int, default=0,
+    #                                       help="Y axis zero padding (height). Both the top and bottom sides of the input will have this padding applied.", dest="padding_y")
+
 
     return parser.parse_args()
 
@@ -187,6 +200,11 @@ def train_model(args):
     elif args.nn == "0f":
         print("Training model 0f")
         from models.CnnDenoisingModel0f import CnnDenoisingModel0f as CnnDenoisingModel
+    elif args.nn == "0g":
+        print("Training model 0g")
+        from models.CnnDenoisingModel0g import CnnDenoisingModel0g as CnnDenoisingModel
+        # Add padding
+        input_dict["configuration"] = {"layers": 36, "sensors_per_layer": 112, "padding_x": 1, "padding_y": 0}
     elif args.nn == "1":
         print("Training model 1")
         from models.CnnDenoisingModel1 import CnnDenoisingModel1 as CnnDenoisingModel
@@ -197,7 +215,9 @@ def train_model(args):
     model = CnnDenoisingModel(input_dict=input_dict)
     model.build_new_model()
 
-    training_metrics = model.train(input_dict)
+    train_dict = model.preprocess_input(input_dict)
+
+    training_metrics = model.train(train_dict)
     training_metrics["results_dir"] = results_dir
 
     model.save_model(results_dir+'cnn_autoenc')
@@ -224,10 +244,16 @@ def test_model(args):
     model = CnnDenoisingModelBase(input_dict=input_dict)
     model.load_model(args.model_path)
 
-    testing_metrics = model.test(input_dict)
+    test_dict = model.preprocess_input(input_dict)
+
+    testing_metrics = model.test(test_dict)
     testing_metrics["input"] = input_dict["testing"]["data"]
     testing_metrics["results_dir"] = results_dir
     testing_metrics["tracks_per_sample"] = input_dict["testing"]["tracks_per_event"]
+
+    if model.use_padding:
+        testing_metrics["truth"] = input_dict["testing"]["labels"]
+        testing_metrics["predictions"] = model.remove_padding(testing_metrics["predictions"])
 
     print_testing_report(testing_metrics)
     plot_accuracy_histogram(testing_metrics)
@@ -252,8 +278,14 @@ def predict(args):
     model = CnnDenoisingModelBase(input_dict=input_dict)
     model.load_model(args.model_path)
 
-    predict_metrics = model.predict(input_dict)
+    predict_dict = model.preprocess_input(input_dict)
+
+    predict_metrics = model.predict(predict_dict)
     # predict_metrics["results_dir"] = results_dir
+
+    if model.use_padding:
+        predict_metrics["predictions"] = model.remove_padding(predict_metrics["predictions"])
+
     denoised = predict_metrics["predictions"]
     raw = input_dict["prediction"]["data"]
     clean = input_dict["prediction"]["labels"]
@@ -311,8 +343,8 @@ def plot_accuracy_histogram(testing_metrics):
     noise_stats = hm.plot_noise(results_dir+'noise_histogram.png', predictions, ground_truth)
     noise_reduction_stats = hm.plot_noise_reduction(results_dir+'noise_reduction_histogram.png', predictions, raw_input, ground_truth)
     hits_per_segment = hm.plot_hits_per_segment(results_dir+'hits_per_segment.png', predictions, ground_truth, testing_metrics["tracks_per_sample"])
-    
-    
+
+
     cases = hits_per_segment["num"]
     hits_max = hits_stats["max"]
     hits_min = hits_stats["min"]
