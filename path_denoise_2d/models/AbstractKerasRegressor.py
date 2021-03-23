@@ -37,7 +37,10 @@ class AbstractKerasRegressor(AbstractModel):
         """
 
         print(colored(f'\nSaving Keras model in {path}.h5', "green"))
-        self.model.save(f'{path}.h5', save_format="h5")
+        self.model.save(f'{path}_full.h5', save_format="h5")
+        with open(f'{path}_config.json', 'w+') as f:
+            f.writelines(self.model.to_json())
+        self.model.save_weights(f'{path}_weights.h5', save_format="h5")
 
     def preprocess_input(self, input_dict):
         raise NotImplementedError
@@ -98,7 +101,7 @@ class AbstractKerasRegressor(AbstractModel):
 
         testing_metrics = {
             "testing_loss": testing_loss,
-            "testing_prediction_time": end- start,
+            "testing_prediction_time": end - start,
             "predictions" : y_pred,
             "truth": y_test
         }
