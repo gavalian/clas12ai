@@ -79,11 +79,10 @@ public abstract class AbstractCnnDenoisingAutoEncoder {
         System.out.println("Starting training for " + nEpochs + " epochs...");
         model.setListeners(new ScoreIterationListener(1));
 
-        int iteration = 0;
         int numIters = trainSet.getNumBatches();
         for (int epoch = 0; epoch < nEpochs; epoch++) {
             System.out.println("Starting epoch: " + (epoch + 1) + ". Number of batches: " + numIters);
-            iteration = 0;
+            int iteration = 0;
             while (trainSet.hasNext()) {
                 System.out.println("Epoch " + (epoch + 1) + "/" + nEpochs + " | Iteration  " + (iteration + 1) + "/" + numIters);
                 INDArray features = trainSet.getNextFeaturesBatch();
@@ -147,7 +146,8 @@ public abstract class AbstractCnnDenoisingAutoEncoder {
             INDArray labels = predictSet.getNextLabelsBatch();
             INDArray predictions = model.output(features);
 
-            // TODO need to fix prediction output
+            // Every value greater than or equal to 0 should become 1, the rest should become 0
+            predictions = Transforms.floor(predictions.add(0.5));
 
             // Remove padding from features, labels, and predictions
             if (hasPadding) {
@@ -173,7 +173,6 @@ public abstract class AbstractCnnDenoisingAutoEncoder {
                     System.exit(1);
                 }
             }
-            System.exit(1);
         }
         writer.close();
 
