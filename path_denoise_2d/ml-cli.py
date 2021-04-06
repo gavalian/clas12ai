@@ -79,6 +79,7 @@ def parse_arguments():
                                             help="Path to the directory to store results.",
                                             dest="results_dir")
 
+    parser_test_optional_args.add_argument("--threshold", required=False, type=float, default="0.5", help="Threshold for valid track", dest="threshold")
     parser_test_optional_args.add_argument("--batch-size", "-b", required=False, type=int, default="8",
                                            help="Size of the evaluation batch.", dest="batch_size")
 
@@ -102,6 +103,7 @@ def parse_arguments():
 
     parser_predict_optional_args.add_argument("--batch-size", "-b", required=False, type=int, default="32",
                                               help="Size of the prediction batch.", dest="prediction_batch_size")
+    parser_predict_optional_args.add_argument("--threshold", required=False, type=float, default="0.5", help="Threshold for valid track", dest="threshold")
 
     return parser.parse_args()
 
@@ -134,7 +136,7 @@ def read_input_data(input_type, args) -> dict:
         X_test, y_test, test_tracks_per_event = read_svm_to_X_Y_datasets(args.testing_file_path, 4032)
 
         return {
-            "testing": {"data": X_test, "labels": y_test, "tracks_per_event": test_tracks_per_event , "batch_size": args.batch_size},
+            "testing": {"data": X_test, "labels": y_test, "tracks_per_event": test_tracks_per_event , "batch_size": args.batch_size, "threshold": args.threshold},
             "configuration": {"layers": 36, "sensors_per_layer": 112}
         }
 
@@ -142,7 +144,7 @@ def read_input_data(input_type, args) -> dict:
         X_test, y_test, predict_tracks_per_event = read_svm_to_X_Y_datasets(args.prediction_file_path, 4032)
 
         return {
-            "prediction": {"data": X_test, "labels": y_test},
+            "prediction": {"data": X_test, "labels": y_test, "threshold": args.threshold},
             "configuration": {"layers": 36, "sensors_per_layer": 112}
         }
 
@@ -225,13 +227,16 @@ def test_model(args):
     model.load_model(args.model_path)
 
     testing_metrics = model.test(input_dict)
+    # testing_metrics["predictions"].reshape(-1, 4032)
     testing_metrics["input"] = input_dict["testing"]["data"]
+    threshold = input_dict["testing"]["threshold"]
+    testing_metrics["threshold"] = threshold
     testing_metrics["results_dir"] = results_dir
     testing_metrics["tracks_per_sample"] = input_dict["testing"]["tracks_per_event"]
 
     print_testing_report(testing_metrics)
     plot_accuracy_histogram(testing_metrics)
-    plot_random_predicted_events(results_dir, input_dict["testing"]["labels"], input_dict["testing"]["data"], testing_metrics["predictions"], 6)
+    plot_random_predicted_events(results_dir, input_dict["testing"]["labels"], input_dict["testing"]["data"], testing_metrics["predictions"], 6, threshold)
     print(colored(f'\nSaving testing results to {results_dir}\n', "green"))
 
 
@@ -267,7 +272,7 @@ def predict(args):
     # save_prediction_results(predict_metrics)
 
 
-def plot_random_predicted_events(results_dir, ground_truth, noisy, prediction, num_random_events, seed = 22):
+def plot_random_predicted_events(results_dir, ground_truth, noisy, prediction, num_random_events, threshold, seed = 22):
     """
     Plots random events after clearing them
 
@@ -287,7 +292,7 @@ def plot_random_predicted_events(results_dir, ground_truth, noisy, prediction, n
     for i, index in enumerate(img_indexes):
         plt.imsave(results_dir+'correct'+str(i)+'.png', ground_truth[index].reshape(img_shape))
         plt.imsave(results_dir+'noisy'+str(i)+'.png', noisy[index].reshape(img_shape))
-        plt.imsave(results_dir+'denoised'+str(i)+'.png', (prediction[index].reshape(img_shape)>0.5).astype(int))
+        plt.imsave(results_dir+'denoised'+str(i)+'.png', (prediction[index].reshape(img_shape)>threshold).astype(int))
 
 
 def plot_accuracy_histogram(testing_metrics):
@@ -297,7 +302,7 @@ def plot_accuracy_histogram(testing_metrics):
     Args:
         training_metrics (dictionary): Dictionary outputted by the training function
     """
-
+    threshold = testing_metrics["threshold"]
     ground_truth = testing_metrics["truth"]
     ground_truth = ground_truth.reshape((-1, ground_truth.shape[-3] * ground_truth.shape[-2]))
     predictions = testing_metrics["predictions"]
@@ -307,10 +312,10 @@ def plot_accuracy_histogram(testing_metrics):
 
     results_dir = testing_metrics["results_dir"]
 
-    hits_stats = hm.plot_hits(results_dir+'hits_histogram.png', predictions, ground_truth)
-    noise_stats = hm.plot_noise(results_dir+'noise_histogram.png', predictions, ground_truth)
-    noise_reduction_stats = hm.plot_noise_reduction(results_dir+'noise_reduction_histogram.png', predictions, raw_input, ground_truth)
-    hits_per_segment = hm.plot_hits_per_segment(results_dir+'hits_per_segment.png', predictions, ground_truth, testing_metrics["tracks_per_sample"])
+    hits_stats = hm.plot_hits(results_dir+'hits_histogram.png', predictions, ground_truth, results_dir, threshold)
+    noise_stats = hm.plot_noise(results_dir+'noise_histogram.png', predictions, ground_truth, results_dir, threshold)
+    noise_reduction_stats = hm.plot_noise_reduction(results_dir+'noise_reduction_histogram.png', predictions, raw_input, ground_truth, results_dir, threshold)
+    hits_per_segment = hm.plot_hits_per_segment(results_dir+'hits_per_segment.png', predictions, ground_truth, testing_metrics["tracks_per_sample"], threshold)
     
     
     cases = hits_per_segment["num"]

@@ -88,11 +88,12 @@ class AbstractKerasRegressor(AbstractModel):
         x_test = input_dict["testing"]["data"]
         y_test = input_dict["testing"]["labels"]
         batch_size = input_dict["testing"]["batch_size"]
+        threshold = input_dict["testing"]["threshold"]
 
         testing_loss = self.model.evaluate(x_test, y_test, batch_size=batch_size)
         start = timer()
         y_pred = self.model.predict(x_test)
-        y_pred = (y_pred[:] >= 0.5).astype(int)
+        y_pred = (y_pred[:] >= threshold).astype(int)
 
         end = timer()
 
@@ -116,10 +117,10 @@ class AbstractKerasRegressor(AbstractModel):
             Dictionary containing the predictions
         """\
 
+        threshold = input_dict["prediction"]["threshold"]
         x = input_dict["prediction"]["data"]
         y_pred = self.model.predict(x)
-        y_pred = (y_pred[:] >= 0.5).astype(int)
-
+        y_pred = (y_pred[:] >= threshold).astype(int)
         predictions_dict = {
             "predictions": y_pred
         }
