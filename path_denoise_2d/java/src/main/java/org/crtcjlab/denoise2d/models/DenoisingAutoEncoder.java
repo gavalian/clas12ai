@@ -28,6 +28,9 @@ public class DenoisingAutoEncoder extends AbstractCnnDenoisingAutoEncoder {
             case "0f":
                 denoisingAutoEncoder = new DenoisingAutoEncoder0f();
                 break;
+            case "0g":
+                denoisingAutoEncoder = new DenoisingAutoEncoder0g();
+                break;
             default:
                 System.out.println("Unexpected model name found. Exiting");
                 System.exit(1);
