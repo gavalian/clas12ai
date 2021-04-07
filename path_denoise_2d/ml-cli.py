@@ -376,11 +376,21 @@ def plot_accuracy_histogram(testing_metrics):
     noise_reduction_min = noise_reduction_stats["min"]
     noise_reduction_mean = noise_reduction_stats["mean"]
     noise_reduction_rms = noise_reduction_stats["rms"]
+    init_noise_mean = noise_reduction_stats["init_noise_mean"]
+    init_noise_rms  = noise_reduction_stats["init_noise_rms"]
+    rec_noise_mean  = noise_reduction_stats["rec_noise_mean"]
+    rec_noise_rms   = noise_reduction_stats["rec_noise_rms"]
 
     print(f'{colored("Noise Reduction Minimum value(%):", "blue")} {noise_reduction_min}')
     print(f'{colored("Noise Reduction Maximum value(%)::", "blue")} {noise_reduction_max}')
     print(f'{colored("Noise Reduction Mean value(%)::", "blue")} {noise_reduction_mean}')
     print(f'{colored("Noise Reduction RMS value(%)::", "blue")} {noise_reduction_rms}')
+
+
+    print(f'{colored("init_noise_mean(%)::", "blue")} {init_noise_mean}')
+    print(f'{colored("init_noise_rms(%)::", "blue")} {init_noise_rms}')
+    print(f'{colored("rec_noise_mean(%)::", "blue")} {rec_noise_mean}')
+    print(f'{colored("rec_noise_rms(%)::", "blue")} {rec_noise_rms}')
 
     reconstruct_6_super_layers = hits_per_segment["valid-6"]
     reconstruct_5_super_layers = hits_per_segment["valid-5"]
@@ -413,6 +423,11 @@ def plot_accuracy_histogram(testing_metrics):
         f.write('Reconstructed from 6 superlayers(%): ' + str((reconstruct_6_super_layers / cases) * 100) + '\n')
         f.write('Reconstructed from 5 superlayers(%): ' + str((reconstruct_5_super_layers / cases) * 100) + '\n')
         f.write('Reconstructed from 4 superlayers(%): ' + str((reconstruct_4_super_layers / cases) * 100) + '\n')
+
+        f.write('init_noise_mean(%): ' + str(init_noise_mean) + '\n')
+        f.write('init_noise_rms(%): ' + str(init_noise_rms) + '\n')
+        f.write('rec_noise_mean(%): ' + str(rec_noise_mean) + '\n')
+        f.write('rec_noise_rms(%): ' + str(rec_noise_rms) + '\n')
 
 
 def plot_train_val_graph(training_metrics):
