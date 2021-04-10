@@ -116,4 +116,12 @@ public class LsvmDataSet {
     public INDArray getAllLabels() {
         return Nd4j.vstack(labels);
     }
+
+    public List<INDArray> getFeatures() {
+        return features;
+    }
+
+    public List<INDArray> getLabels() {
+        return labels;
+    }
 }

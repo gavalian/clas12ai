@@ -8,23 +8,20 @@ import org.datavec.api.split.partition.NumberOfRecordsPartitioner;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
-import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Pad;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import javax.security.sasl.SaslServer;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -113,6 +110,81 @@ public abstract class AbstractCnnDenoisingAutoEncoder {
         }
 
         System.out.println(eval.stats());
+    }
+
+    private enum PaddingOperation {
+        ADD, REMOVE
+    }
+
+    /**
+     * Add or remove padding for the list of features
+     *
+     * @param array List to process.
+     * @param paddingX Horizontal padding to apply or remove. Half this value is applied or removed left and right.
+     * @param paddingY Vertical padding to apply or remove. Half this value is applied or remove top and bottom.
+     * @param paddingOp Padding operation to apply. Can either add or remove padding.
+     */
+    private static void processPadding(final List<INDArray> array, final int paddingX, final int paddingY, PaddingOperation paddingOp) {
+        // Ensure that the padding values are divisible by 2
+        if (paddingX % 2 != 0) {
+            System.out.println(paddingX);
+            System.err.println("Error: X padding must be divisible by 2.");
+            System.exit(1);
+        }
+        if (paddingY % 2 != 0) {
+            System.err.println("Error: Y padding must be divisible by 2.");
+            System.exit(1);
+        }
+
+        final int paddingSign = (paddingOp == PaddingOperation.REMOVE) ? -1 : 1;
+
+        final int halfPaddingX = (paddingX / 2) * paddingSign;
+        final int halfPaddingY = (paddingY / 2) * paddingSign;
+
+        // Process padding
+        for (int i = 0; i < array.size(); ++i) {
+            INDArray element = array.get(i);
+            INDArray newElement = Nd4j.pad(element, new int[][]{{0, 0}, {halfPaddingY, halfPaddingY}, {halfPaddingX, halfPaddingX}, {0, 0}}, Pad.Mode.CONSTANT, 0);
+            array.set(i, newElement);
+        }
+    }
+
+    /**
+     * Predict values with the current model. Applies padding if any padding parameter is passed.
+     *
+     * @param features List of INDArray features
+     * @param paddingX Horizontal padding to apply. Half this value is applied left and right
+     * @param paddingY Vertical padding to apply. Half this value is applied top and bottom
+     * @param threshold Threshold above which predicted values become 1, and below which they become 0
+     * @return List of INDArray predictions
+     */
+    public List<INDArray> predict(final List<INDArray> features, final int paddingX, final int paddingY, final double threshold) {
+        final int totalBatches = features.size();
+        final List<INDArray> predictions = new ArrayList<>(totalBatches);
+
+        // Check if we have padding
+        final boolean hasPadding = paddingX != 0 || paddingY != 0;
+
+        // Apply padding
+        if (hasPadding) {
+            processPadding(features, paddingX, paddingY, PaddingOperation.ADD);
+        }
+
+        // Predict
+        for (int i = 0; i < totalBatches; ++i) {
+            System.out.println("Iteration  " + (i + 1) + "/" + totalBatches);
+            INDArray prediction = model.output(features.get(i));
+            prediction = Transforms.floor(prediction.add(1 - threshold));
+            predictions.add(prediction);
+        }
+
+        // Remove padding from features and predictions
+        if (hasPadding) {
+            processPadding(features, paddingX, paddingY, PaddingOperation.REMOVE);
+            processPadding(predictions, paddingX, paddingY, PaddingOperation.REMOVE);
+        }
+
+        return predictions;
     }
 
     public void predict(LsvmDataSet predictSet, String resultsPath, final int paddingX, final int paddingY) {
