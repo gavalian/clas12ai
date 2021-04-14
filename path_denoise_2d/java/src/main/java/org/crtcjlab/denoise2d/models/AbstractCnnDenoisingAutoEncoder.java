@@ -172,7 +172,7 @@ public abstract class AbstractCnnDenoisingAutoEncoder {
 
         // Predict
         for (int i = 0; i < totalBatches; ++i) {
-            System.out.println("Iteration  " + (i + 1) + "/" + totalBatches);
+            //--> Commented by Gagik /System.out.println("Iteration  " + (i + 1) + "/" + totalBatches);
             INDArray prediction = model.output(features.get(i));
             prediction = Transforms.floor(prediction.add(1 - threshold));
             predictions.add(prediction);
@@ -213,7 +213,7 @@ public abstract class AbstractCnnDenoisingAutoEncoder {
         final int halfPaddingY = paddingY / 2;
 
         while (predictSet.hasNext()) {
-            System.out.println("Iteration  " + (iteration + 1) + "/" + numIters);
+            //-- commented by Gagik / System.out.println("Iteration  " + (iteration + 1) + "/" + numIters);
             INDArray features = predictSet.getNextFeaturesBatch();
             INDArray labels = predictSet.getNextLabelsBatch();
             INDArray predictions = model.output(features);
