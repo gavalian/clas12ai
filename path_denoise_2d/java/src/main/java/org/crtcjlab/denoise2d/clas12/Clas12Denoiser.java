@@ -156,9 +156,10 @@ public class Clas12Denoiser {
     public void showStats(){
         double rate = ((double) (executionTimeML))/executionCountML ;
         double rateAlgo = ((double) (executionTime))/executionCount ;
-        
-        System.out.printf("ML >>> exeuction time %12d, # events = %12d , rate = %8.2f msec/event, procedure = %8.2f\n",
-                executionTimeML, executionCountML, rate,rateAlgo);
+        double   networkInferenceRate = this.model.getExecutionTime();
+        double   paddingRate = this.model.getPaddingTime();
+        System.out.printf("ML >>> exeuction time %12d, # events = %12d , rate = %8.2f msec/event, procedure = %8.2f, inference %8.4f msec/event, padding %8.4f msec/event\n",
+                executionTimeML, executionCountML, rate,rateAlgo,networkInferenceRate,paddingRate);
     }
     
     public static class TDC {

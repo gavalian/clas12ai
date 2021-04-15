@@ -26,11 +26,17 @@ import java.util.Arrays;
 import java.util.List;
 
 public abstract class AbstractCnnDenoisingAutoEncoder {
+    
     protected int width, height, channels;
     protected static long seed = 123L;
 
     protected MultiLayerNetwork model;
 
+    protected long  executionTime = 0L;
+    protected long executionCount = 0L;
+    protected long paddingTime = 0L;
+    protected long paddingCount = 0L;
+    
     public AbstractCnnDenoisingAutoEncoder() {
         width = 112;
         height = 36;
@@ -148,7 +154,13 @@ public abstract class AbstractCnnDenoisingAutoEncoder {
             array.set(i, newElement);
         }
     }
-
+    
+    public double getExecutionTime(){
+        return ( (double) executionTime)/executionCount;
+    }
+    public double getPaddingTime(){
+        return ( (double) paddingTime)/paddingCount;
+    }
     /**
      * Predict values with the current model. Applies padding if any padding parameter is passed.
      *
@@ -167,21 +179,35 @@ public abstract class AbstractCnnDenoisingAutoEncoder {
 
         // Apply padding
         if (hasPadding) {
+            long then = System.currentTimeMillis();
             processPadding(features, paddingX, paddingY, PaddingOperation.ADD);
+            long now = System.currentTimeMillis();
+            paddingTime += (now-then);
+            paddingCount++;
         }
 
         // Predict
         for (int i = 0; i < totalBatches; ++i) {
             //--> Commented by Gagik /System.out.println("Iteration  " + (i + 1) + "/" + totalBatches);
+            long then = System.currentTimeMillis();
             INDArray prediction = model.output(features.get(i));
+            
+            long now = System.currentTimeMillis();
+            executionTime += (now - then);
+            executionCount++;
             prediction = Transforms.floor(prediction.add(1 - threshold));
             predictions.add(prediction);
+            
         }
 
         // Remove padding from features and predictions
         if (hasPadding) {
+            long then = System.currentTimeMillis();
             processPadding(features, paddingX, paddingY, PaddingOperation.REMOVE);
             processPadding(predictions, paddingX, paddingY, PaddingOperation.REMOVE);
+            long now = System.currentTimeMillis();
+            paddingTime += (now-then);
+            paddingCount++;
         }
 
         return predictions;
