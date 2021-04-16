@@ -204,8 +204,12 @@ public class Clas12Denoiser {
     
     public static void main(String[] args){
         
-        
             String file = "/Users/gavalian/Work/DataSpace/test/clas_005038.1231.hipo";
+            String outputFile = "denoised.hipo";
+            if(args.length>0){
+                file   = args[0];
+                outputFile = args[1];
+            }
             
             HipoReader reader = new HipoReader();
             reader.open(file);
@@ -216,7 +220,7 @@ public class Clas12Denoiser {
             Clas12Denoiser denoiser = Clas12Denoiser.withFile("models/cnn_autoenc_config.json","models/cnn_autoenc_weights.h5");
             HipoWriter writer = new HipoWriter(reader.getSchemaFactory());
             
-            writer.open("clas_005038.1231_denoised.hipo");
+            writer.open(outputFile);
             
             int counter = 0;
             
