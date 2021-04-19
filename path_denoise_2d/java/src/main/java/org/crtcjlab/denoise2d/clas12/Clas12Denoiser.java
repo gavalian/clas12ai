@@ -17,6 +17,8 @@ import org.jlab.jnp.hipo4.data.Bank;
 import org.jlab.jnp.hipo4.data.Event;
 import org.jlab.jnp.hipo4.io.HipoReader;
 import org.jlab.jnp.hipo4.io.HipoWriter;
+import org.jlab.jnp.utils.options.OptionParser;
+import org.jlab.jnp.utils.options.OptionStore;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -34,6 +36,10 @@ public class Clas12Denoiser {
     long executionTime = 0L;
     long executionCount = 0L;
     
+    
+    boolean hitRecovery = false;
+    
+    
     public Clas12Denoiser(){
         
     }
@@ -46,6 +52,14 @@ public class Clas12Denoiser {
         Clas12Denoiser denoiser = new Clas12Denoiser();
         denoiser.init(config, weights);
         return denoiser;
+    }
+    
+    
+    public Clas12Denoiser setHitRecovery(boolean flag){
+        System.out.println("****************************************************");
+        System.out.println("* TURN HIT RECOVERY : " + flag);
+        System.out.println("****************************************************");
+        this.hitRecovery = flag; return this;
     }
     
     protected void init(String config, String weights){
@@ -63,7 +77,7 @@ public class Clas12Denoiser {
     
     public List<INDArray>  getOutput(List<INDArray> features, double threshold){
         long then = System.currentTimeMillis();
-        List<INDArray> predictions = model.predict(features, 2, 0, threshold);
+        List<INDArray> predictions = model.predict(features, 2, 0, threshold, hitRecovery);
         long now = System.currentTimeMillis();
         executionTimeML += (now-then);
         executionCountML++;
@@ -204,52 +218,54 @@ public class Clas12Denoiser {
     
     public static void main(String[] args){
         
-            String file = "/Users/gavalian/Work/DataSpace/test/clas_005038.1231.hipo";
-            String outputFile = "denoised.hipo";
-            if(args.length>0){
-                file   = args[0];
-                outputFile = args[1];
-            }
-            
-            HipoReader reader = new HipoReader();
-            reader.open(file);
-            
-            Bank dc = reader.getBank("DC::tdc");
-            Event event = new Event();
-            
-            Clas12Denoiser denoiser = Clas12Denoiser.withFile("models/cnn_autoenc_config.json","models/cnn_autoenc_weights.h5");
-            HipoWriter writer = new HipoWriter(reader.getSchemaFactory());
-            
-            writer.open(outputFile);
-            
-            int counter = 0;
-            
-            while(reader.hasNext()){
-                
-                reader.nextEvent(event);
-                event.read(dc);
-                
-                List<INDArray> features = denoiser.getDataFeatures(dc);
-                
-                List<INDArray> output = denoiser.getOutput(features, 0.05);
-                
-                /*System.out.println("----> event");
-                denoiser.show(features.get(0), 0.5);
-                System.out.println("----> after the fix");
-                denoiser.show(output.get(0), 0.5);
-                */
-                Bank dcnuevo = denoiser.reduce(dc, output);
-                //System.out.printf("event (#%8d) DC TDC size = %4d , reduced = %4d\n",counter,dc.getRows(), dcnuevo.getRows());
-                event.remove(dc.getSchema());
-                
-                event.write(dcnuevo);
-                writer.addEvent(event);
-                counter++;
-                if(counter%100==0) denoiser.showStats();
-                //System.out.printf("event (#%8d) DC TDC size = %4d , reduced = %4d\n",counter,dc.getRows(), dcnuevo.getRows());
-                
-            }
-            writer.close();
+        OptionParser parser = new OptionParser();
+        parser.addOption("-r", "false", "turn on hit recovery");
+        parser.addRequired("-o", "output file name");
+        parser.parse(args);
         
+
+            
+        List<String> inputFiles = parser.getInputList();
+        String          recover = parser.getOption("-r").stringValue();
+        
+        String file = inputFiles.get(0);
+        String outputFile = parser.getOption("-o").stringValue();
+        
+        HipoReader reader = new HipoReader();
+        reader.open(file);
+        
+        Bank dc = reader.getBank("DC::tdc");
+        Event event = new Event();
+        
+        Clas12Denoiser denoiser = Clas12Denoiser.withFile("models/cnn_autoenc_config.json","models/cnn_autoenc_weights.h5");
+        if(recover.compareTo("true")==0){ denoiser.setHitRecovery(true);}
+        
+        HipoWriter writer = new HipoWriter(reader.getSchemaFactory());        
+        writer.open(outputFile);
+        
+        int counter = 0;
+        
+        while(reader.hasNext()){
+            
+            reader.nextEvent(event);
+            event.read(dc);            
+            List<INDArray> features = denoiser.getDataFeatures(dc);            
+            List<INDArray> output = denoiser.getOutput(features, 0.05);            
+            /*System.out.println("----> event");
+            denoiser.show(features.get(0), 0.5);
+            System.out.println("----> after the fix");
+            denoiser.show(output.get(0), 0.5);
+            */
+            Bank dcnuevo = denoiser.reduce(dc, output);
+            //System.out.printf("event (#%8d) DC TDC size = %4d , reduced = %4d\n",counter,dc.getRows(), dcnuevo.getRows());
+            event.remove(dc.getSchema());
+            
+            event.write(dcnuevo);
+            writer.addEvent(event);
+            counter++;
+            if(counter%100==0) denoiser.showStats();
+            //System.out.printf("event (#%8d) DC TDC size = %4d , reduced = %4d\n",counter,dc.getRows(), dcnuevo.getRows());           
+        }
+        writer.close();       
     }
 }
