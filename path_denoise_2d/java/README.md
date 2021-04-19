@@ -11,6 +11,6 @@ model.loadKerasModel(modelConfigPath, modelWeightsPath);
 
 List<INDArray> features = getFeaturesFromSomewhere();
 
-// Params: feature list, padding x, padding y, threshold
-List<INDArray> predictions = model.predict(features, 2, 0, 0.5);
+// Params: feature list, padding x, padding y, threshold, recoverHits
+List<INDArray> predictions = model.predict(features, 2, 0, 0.5, true);
 ```

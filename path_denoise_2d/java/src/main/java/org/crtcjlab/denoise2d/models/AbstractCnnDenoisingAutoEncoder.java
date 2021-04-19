@@ -293,7 +293,7 @@ public abstract class AbstractCnnDenoisingAutoEncoder {
      * @param threshold Threshold above which predicted values become 1, and below which they become 0
      * @return List of INDArray predictions
      */
-    public List<INDArray> predict(final List<INDArray> features, final int paddingX, final int paddingY, final double threshold) {
+    public List<INDArray> predict(final List<INDArray> features, final int paddingX, final int paddingY, final double threshold, final boolean recoverHits) {
         final int totalBatches = features.size();
         final List<INDArray> predictions = new ArrayList<>(totalBatches);
 
@@ -319,7 +319,9 @@ public abstract class AbstractCnnDenoisingAutoEncoder {
             processPadding(predictions, paddingX, paddingY, PaddingOperation.REMOVE);
         }
 
-        recoverMissingHits(predictions, features);
+        if (recoverHits) {
+            recoverMissingHits(predictions, features);
+        }
 
         return predictions;
     }
