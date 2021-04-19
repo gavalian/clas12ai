@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.IntStream;
 
 public abstract class AbstractCnnDenoisingAutoEncoder {
     protected int width, height, channels;
@@ -119,12 +120,12 @@ public abstract class AbstractCnnDenoisingAutoEncoder {
     /**
      * Add or remove padding for the list of features
      *
-     * @param array List to process.
-     * @param paddingX Horizontal padding to apply or remove. Half this value is applied or removed left and right.
-     * @param paddingY Vertical padding to apply or remove. Half this value is applied or remove top and bottom.
+     * @param array     List to process.
+     * @param paddingX  Horizontal padding to apply or remove. Half this value is applied or removed left and right.
+     * @param paddingY  Vertical padding to apply or remove. Half this value is applied or remove top and bottom.
      * @param paddingOp Padding operation to apply. Can either add or remove padding.
      */
-    private static void processPadding(final List<INDArray> array, final int paddingX, final int paddingY, PaddingOperation paddingOp) {
+    private static void processPadding(List<INDArray> array, final int paddingX, final int paddingY, PaddingOperation paddingOp) {
         // Ensure that the padding values are divisible by 2
         if (paddingX % 2 != 0) {
             System.out.println(paddingX);
@@ -150,11 +151,145 @@ public abstract class AbstractCnnDenoisingAutoEncoder {
     }
 
     /**
+     * Recovers missing hits from a set of denoised features.
+     * All elements within a 1 sensor radius from 1.0 elements in the denoised features that are also 1.0 in the noisy
+     * features are set to 1.0. This tries to fill gaps that may have been produced by the denoising process.
+     *
+     * The following neighbor offset notation is used (row,col):
+     * -1,-1  | -1,0  | -1,+1
+     *  0,-1  |  0,0  |  0,+1
+     * +1,-1  | +1,0  | +1,+1
+     *
+     * NOTE: Experimental
+     *
+     * @param denoisedFeatures Denoised features (i.e. output of the ML model). These will be modified by the function.
+     * @param noisyFeatures Noisy features (i.e. input to the ML model).
+     */
+    public void recoverMissingHits(List<INDArray> denoisedFeatures, final List<INDArray> noisyFeatures) {
+        final int numBatches = (int) denoisedFeatures.get(0).shape()[0];
+        final int numRows = (int) denoisedFeatures.get(0).shape()[1];
+        final int numCols = (int) denoisedFeatures.get(0).shape()[2];
+
+        // Iterate samples
+        IntStream.range(0, denoisedFeatures.size())
+                .parallel()
+                .forEach(i -> {
+                    INDArray denoisedFeature = denoisedFeatures.get(i);
+                    INDArray noisyFeature = noisyFeatures.get(i);
+
+                    // Iterate sample elements
+                    for (int batch = 0; batch < numBatches; ++batch) {
+                        for (int row = 0; row < numRows; ++row) {
+                            for (int col = 0; col < numCols; ++col) {
+                                // Get denoised element
+                                double denoisedElement = denoisedFeature.getDouble(batch, row, col, 0);
+
+                                // Skip denoised elements that are not hits
+                                if (denoisedElement != 1) continue;
+
+                                // Check neighbors
+                                boolean hasTopNeighbors = (row - 1) >= 0;
+                                boolean hasBottomNeighbors = (row + 1) < numRows;
+                                boolean hasLeftNeighbors = (col - 1) >= 0;
+                                boolean hasRightNeighbors = (col + 1) < numCols;
+
+                                double neighborNoisyElement;
+                                double neighborDenoisedElement;
+
+                                // Neighbor -1, 0
+                                if (hasTopNeighbors) {
+                                    neighborNoisyElement = noisyFeature.getDouble(batch, row - 1, col, 0);
+                                    neighborDenoisedElement = denoisedFeature.getDouble(batch, row - 1, col, 0);
+
+                                    if (neighborNoisyElement == 1 && neighborDenoisedElement == 0) {
+                                        denoisedFeature.putScalar(new int[]{batch, row - 1, col, 0}, 1.5);
+                                    }
+
+                                    // Neighbor -1, -1
+                                    if (hasLeftNeighbors) {
+                                        neighborNoisyElement = noisyFeature.getDouble(batch, row - 1, col - 1, 0);
+                                        neighborDenoisedElement = denoisedFeature.getDouble(batch, row - 1, col - 1, 0);
+
+                                        if (neighborNoisyElement == 1 && neighborDenoisedElement == 0) {
+                                            denoisedFeature.putScalar(new int[]{batch, row - 1, col - 1, 0}, 1.5);
+                                        }
+                                    }
+
+                                    // Neighbor -1, +1
+                                    if (hasRightNeighbors) {
+                                        neighborNoisyElement = noisyFeature.getDouble(batch, row - 1, col + 1, 0);
+                                        neighborDenoisedElement = denoisedFeature.getDouble(batch, row - 1, col + 1, 0);
+
+                                        if (neighborNoisyElement == 1 && neighborDenoisedElement == 0) {
+                                            denoisedFeature.putScalar(new int[]{batch, row - 1, col + 1, 0}, 1.5);
+                                        }
+                                    }
+                                }
+
+                                // Neighbor 0, -1
+                                if (hasLeftNeighbors) {
+                                    neighborNoisyElement = noisyFeature.getDouble(batch, row, col - 1, 0);
+                                    neighborDenoisedElement = denoisedFeature.getDouble(batch, row, col - 1, 0);
+
+                                    if (neighborNoisyElement == 1 && neighborDenoisedElement == 0) {
+                                        denoisedFeature.putScalar(new int[]{batch, row, col - 1, 0}, 1.5);
+                                    }
+                                }
+                                // Neighbor 0, +1
+                                if (hasRightNeighbors) {
+                                    neighborNoisyElement = noisyFeature.getDouble(batch, row, col + 1, 0);
+                                    neighborDenoisedElement = denoisedFeature.getDouble(batch, row, col + 1, 0);
+
+                                    if (neighborNoisyElement == 1 && neighborDenoisedElement == 0) {
+                                        denoisedFeature.putScalar(new int[]{batch, row, col + 1, 0}, 1.5);
+                                    }
+                                }
+
+                                // Neighbor +1, 0
+                                if (hasBottomNeighbors) {
+                                    neighborNoisyElement = noisyFeature.getDouble(batch, row + 1, col, 0);
+                                    neighborDenoisedElement = denoisedFeature.getDouble(batch, row + 1, col, 0);
+
+                                    if (neighborNoisyElement == 1 && neighborDenoisedElement == 0) {
+                                        denoisedFeature.putScalar(new int[]{batch, row + 1, col, 0}, 1.5);
+                                    }
+
+                                    // Neighbor +1, -1
+                                    if (hasLeftNeighbors) {
+                                        neighborNoisyElement = noisyFeature.getDouble(batch, row + 1, col - 1, 0);
+                                        neighborDenoisedElement = denoisedFeature.getDouble(batch, row + 1, col - 1, 0);
+
+                                        if (neighborNoisyElement == 1 && neighborDenoisedElement == 0) {
+                                            denoisedFeature.putScalar(new int[]{batch, row + 1, col - 1, 0}, 1.5);
+                                        }
+                                    }
+
+                                    // Neighbor +1, +1
+                                    if (hasRightNeighbors) {
+                                        neighborNoisyElement = noisyFeature.getDouble(batch, row + 1, col + 1, 0);
+                                        neighborDenoisedElement = denoisedFeature.getDouble(batch, row + 1, col + 1, 0);
+
+                                        if (neighborNoisyElement == 1 && neighborDenoisedElement == 0) {
+                                            denoisedFeature.putScalar(new int[]{batch, row + 1, col + 1, 0}, 1.5);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Convert all 1.5s to 1s
+                        denoisedFeature = Transforms.floor(denoisedFeature);
+                        denoisedFeatures.set(i, denoisedFeature);
+                    }
+                });
+    }
+
+    /**
      * Predict values with the current model. Applies padding if any padding parameter is passed.
      *
-     * @param features List of INDArray features
-     * @param paddingX Horizontal padding to apply. Half this value is applied left and right
-     * @param paddingY Vertical padding to apply. Half this value is applied top and bottom
+     * @param features  List of INDArray features
+     * @param paddingX  Horizontal padding to apply. Half this value is applied left and right
+     * @param paddingY  Vertical padding to apply. Half this value is applied top and bottom
      * @param threshold Threshold above which predicted values become 1, and below which they become 0
      * @return List of INDArray predictions
      */
@@ -183,6 +318,8 @@ public abstract class AbstractCnnDenoisingAutoEncoder {
             processPadding(features, paddingX, paddingY, PaddingOperation.REMOVE);
             processPadding(predictions, paddingX, paddingY, PaddingOperation.REMOVE);
         }
+
+        recoverMissingHits(predictions, features);
 
         return predictions;
     }
