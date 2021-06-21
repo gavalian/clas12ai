@@ -116,3 +116,7 @@ Optional arguments:
   --threshold THRESHOLD
                         Threshold for valid track
 ```
+
+## Datasets
+
+The datasets used for the paper can be found [here](https://userweb.jlab.org/~gavalian/ML/2021/Denoise/).
