@@ -13,7 +13,6 @@ matplotlib.use('pdf')
 import matplotlib.pyplot as plt
 import numpy as np
 import histogram as hm
-from models.CnnDenoisingModelBase import CnnDenoisingModelBase
 
 
 def main():
@@ -21,6 +20,7 @@ def main():
     print(args)
 
     subroutine = get_subroutine(args)
+    from models.CnnDenoisingModelBase import CnnDenoisingModelBase
     subroutine(args)
 
 
