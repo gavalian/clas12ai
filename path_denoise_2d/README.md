@@ -15,14 +15,14 @@ To simplify the installation process a ```YAML``` file is provided that can be u
 
 To install dependencies using [anaconda](https://www.anaconda.com/), first install anaconda and then use the following command:
 ```bash
-conda env create -f conda_environment.yml
+conda env create -f ml.yaml
 ```
 This should install all required dependencies for our software.
 
 # Usage
 To use the provided script first enable the conda environment you just created (if used anaconda for that):
 ```bash
-conda activate <conda-environment>
+conda activate ml
 ```
 
 The software provides three subprograms:
