@@ -20,7 +20,6 @@ def main():
     print(args)
 
     subroutine = get_subroutine(args)
-    from models.CnnDenoisingModelBase import CnnDenoisingModelBase
     subroutine(args)
 
 
@@ -181,7 +180,7 @@ def train_model(args):
     if not os.path.exists(results_dir):
         os.mkdir(results_dir)
 
-    if not args.nn:
+    if not args.nn or args.nn == "0":
         print("Training model 0")
         from models.CnnDenoisingModel0 import CnnDenoisingModel0 as CnnDenoisingModel
     elif args.nn == "0a":
@@ -229,6 +228,8 @@ def train_model(args):
 
 
 def test_model(args):
+    from models.CnnDenoisingModelBase import CnnDenoisingModelBase
+
     """
     Tests a model with the input data specified in the CLI arguments.
 
