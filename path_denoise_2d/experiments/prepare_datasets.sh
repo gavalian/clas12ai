@@ -2,7 +2,7 @@
 
 declare -a train_sets
 path="https://userweb.jlab.org/~gavalian/ML/2021/Denoise/"
-path_luminosity="https://userweb.jlab.org/~gavalian/ML/2021/Denoise/luminocity/"
+path_luminosity="https://userweb.jlab.org/~gavalian/ML/2021/Denoise/luminocity_fixed/"
 train_sets=( "dc_denoise_one_track_1.lsvm" "dc_denoise_two_track_1.lsvm" )
 test_sets=( "dc_denoise_one_track_2.lsvm" "dc_denoise_two_track_2.lsvm" )
 
@@ -58,10 +58,9 @@ do
     if [ ! -d fixed_data ]; then
         mkdir fixed_data
     fi
-        python3 fix_data.py
         if [ $n -ne 5 ]; then
-            cat fixed_data/dc_denoise_one_track_fixed_"${n}"nA.lsvm >> luminosity_${n}nA.lsvm
-            cat fixed_data/dc_denoise_two_track_fixed_"${n}"nA.lsvm >> luminosity_${n}nA.lsvm
+            cat dc_denoise_one_track_fixed_"${n}"nA.lsvm >> luminosity_${n}nA.lsvm
+            cat dc_denoise_two_track_fixed_"${n}"nA.lsvm >> luminosity_${n}nA.lsvm
         fi
     #fi
 done

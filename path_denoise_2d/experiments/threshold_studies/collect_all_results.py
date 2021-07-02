@@ -81,7 +81,7 @@ plt.legend(loc="best")
 plt.savefig('../hit_rec_vs_threshold.png')
 plt.figure()
 
-for t ,m in zip(["0.05", "0.10", "0.15", "0.20", "0.25","0.30","0.35","0.40","0.45","0.5"], markers):
+for t ,m in zip(["0.05", "0.10", "0.20", "0.30", "0.40","0.5"], markers):
     plt.scatter([45, 50, 55, 90, 100, 110], all_tracks[t], edgecolors='k', marker=m, label=str(t))
 plt.xlabel("Beam Current (nA)")
 plt.ylabel("Track reconstruction Efficiency")

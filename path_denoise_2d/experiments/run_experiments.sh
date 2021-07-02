@@ -88,11 +88,12 @@ run_threshold_studies() {
 
         done
     done
+    cd ..
 }
 
-# run_model_studies
-# run_luminosity_studies
-# run_threshold_studies
+run_model_studies
+run_luminosity_studies
+run_threshold_studies
 
 
 echo "Collecting Results for Model Studies"
@@ -101,7 +102,7 @@ python3 collect_all_results.py
 cd ..
 
 echo "Collecting Results for Luminosity Studies"
-cd luminostiy_studies
+cd luminosity_studies
 python3 collect_all_results.py
 python3 plot_segments.py
 cd ..
