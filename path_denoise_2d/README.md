@@ -120,3 +120,14 @@ Optional arguments:
 ## Datasets
 
 The datasets used for the paper can be found [here](https://userweb.jlab.org/~gavalian/ML/2021/Denoise/).
+
+## Running experiments presented in paper
+
+To run most of the experiments presented in the paper and generate the respective plots with provide a script that automates this process in the '''experiments''' directory. 
+```bash
+cd experiments
+bash ./run_experiments.sh
+```
+Should download all datasets and run the experiments. <br>
+Note that the plots in section 8 require running the CLAS12 reconstruction software and are thus not provided.
+Also, randomness is an integral of the Machine Learning (e.g. weight initialization) process, so the generated results might vary to a degree in comparison to the results presented in the paper. 
