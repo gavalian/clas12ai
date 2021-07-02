@@ -119,7 +119,7 @@ Optional arguments:
 
 ## Datasets
 
-The datasets used for model studies can be found [here](https://userweb.jlab.org/~gavalian/ML/2021/Denoise/)
+The datasets used for model studies can be found [here](https://userweb.jlab.org/~gavalian/ML/2021/Denoise/) <br>
 Dataset for the luminosity and threshold studies are [here](https://userweb.jlab.org/~gavalian/ML/2021/Denoise/luminocity_fixed/) 
 
 ## Running experiments presented in paper
