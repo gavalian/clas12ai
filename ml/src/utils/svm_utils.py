@@ -47,9 +47,9 @@ def read_concat_svm_files(filenames, num_features):
         concat_labels.append(temp_labels)
 
     concat_rows_np = np.concatenate(concat_rows)
-    cocnat_labels_np = np.concatenate(concat_labels)
+    concat_labels_np = np.concatenate(concat_labels)
 
-    return concat_rows_np, cocnat_labels_np
+    return concat_rows_np, concat_labels_np
 
 def get_total_samples(labels):
     """
@@ -96,7 +96,7 @@ def segment_svm_data(rows, labels):
     
     start_index = -1
     for current_index, val in enumerate(labels):
-       if val == 1:
+       if val != 0:
         if start_index == -1:
             start_index = current_index
         else:

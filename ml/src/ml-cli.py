@@ -9,6 +9,7 @@ import argparse
 import os.path
 from sklearn.metrics import confusion_matrix
 from termcolor import colored
+import os.path
 
 from utils.svm_utils import *
 from models.ExtraTreesModel import ExtraTreesModel
@@ -47,7 +48,7 @@ def parse_arguments():
     parser_train_required_args.add_argument("--model-type", choices=["cnn", "mlp", "et"], required=True, help="The type of the model to train.", dest="model_type")
     
     # TODO replace with --model-config
-    parser_train_optional_args.add_argument("--epochs", required=False, type=int, default="5", help="How many training epochs to go through.", dest="training_epochs")
+    parser_train_optional_args.add_argument("--epochs", required=False, type=int, default="10", help="How many training epochs to go through.", dest="training_epochs")
     parser_train_optional_args.add_argument("--batchSize", required=False, type=int, default="16", help="Size of the training batch.", dest="training_batch_size")
     parser_train_optional_args.add_argument("--testing-batchSize", required=False, type=int, default="16", help="Size of the evaluation batch.", dest="evaluation_batch_size")
 
@@ -106,7 +107,8 @@ def read_input_data(input_type, args) -> dict:
             "training": {"data": X_train, "labels": y_train, "epochs": args.training_epochs, "batch_size": args.training_batch_size}, 
             "testing": {"data": X_test, "labels": y_test,"batch_size": args.evaluation_batch_size},
             "testing_segmented": {"data": X_test_segmented, "labels": y_test_segmented},
-            "total_test_samples": total_test_samples
+            "total_test_samples": total_test_samples,
+            "num_classes": int(np.max(y_train)) + 1
         }
 
     elif input_type == "test":
@@ -120,7 +122,8 @@ def read_input_data(input_type, args) -> dict:
         return {
             "testing": {"data": X_test, "labels": y_test, "batch_size": args.evaluation_batch_size},
             "testing_segmented": {"data": X_test_segmented, "labels": y_test_segmented},
-            "total_test_samples": total_test_samples
+            "total_test_samples": total_test_samples,
+            "num_classes": int(np.max(y_test)) + 1
         }
     
     #elif input_type == "predict":
@@ -147,6 +150,7 @@ def print_testing_report(testing_dict):
     accuracy_A1 = testing_dict["accuracy_A1"]
     accuracy_Ac = testing_dict["accuracy_Ac"]
     accuracy_Ah = testing_dict["accuracy_Ah"]
+#    accuracy_new_Ah = testing_dict["accuracy_new_Ah"]
     accuracy_Af = testing_dict["accuracy_Af"]
 
     print("\nTesting Report")
@@ -159,6 +163,7 @@ def print_testing_report(testing_dict):
     print(f'{colored("Accuracy A1:", "yellow")} {accuracy_A1}')
     print(f'{colored("Accuracy Ac:", "yellow")} {accuracy_Ac}')
     print(f'{colored("Accuracy Ah:", "yellow")} {accuracy_Ah}')
+#    print(f'{colored("Accuracy new_Ah:", "yellow")} {accuracy_new_Ah}')
     print(f'{colored("Accuracy Af:", "yellow")} {accuracy_Af}')
 
 def train_model(args):
@@ -170,23 +175,50 @@ def train_model(args):
     """
 
     print(colored("\nReading input data...", "green"))
-    input_dict = read_input_data("train", args)
+    training_files = []
+    model  = None
 
-    model = None
+    if os.path.isdir(args.training_file_path):
+        training_dir = args.training_file_path
+        for f in os.listdir(training_dir):
+            if f.endswith(".lsvm"):
+                training_files.append(training_dir+f)
+        
+        for idx, train_file in enumerate(training_files):
+            args.training_file_path = train_file
+            input_dict = read_input_data("train", args)
 
-    if args.model_type == "et":
-        model = ExtraTreesModel()
-    elif (args.model_type == "mlp"):
-        model = MlpModel()
-    elif (args.model_type == "cnn"):
-        model = CnnModel(in_dict = input_dict)
+            if idx == 0:
+                if args.model_type == "et":
+                    model = ExtraTreesModel()
+                elif (args.model_type == "mlp"):
+                    model = MlpModel()
+                elif (args.model_type == "cnn"):
+                    model = CnnModel(input_dict)
 
-    model.build_new_model()
-    training_dict = model.train(input_dict)
+                model.build_new_model()
+            else:
+                model.preprocess_input(input_dict)
+
+            training_dict = model.train(input_dict)
+            print_training_report(training_dict)
+        
+    else:
+        input_dict = read_input_data("train", args)
+
+        if args.model_type == "et":
+            model = ExtraTreesModel()
+        elif (args.model_type == "mlp"):
+            model = MlpModel()
+        elif (args.model_type == "cnn"):
+            model = CnnModel(input_dict)
+
+        model.build_new_model()
+        training_dict = model.train(input_dict)
+        print_training_report(training_dict)
 
     testing_dict = model.test(input_dict)
     
-    print_training_report(training_dict)
     print_testing_report(testing_dict)
 
     model.save_model(args.output_model_path)
@@ -209,7 +241,7 @@ def test_model(args):
     elif (args.model_type == "mlp"):
         model = MlpModel()
     elif (args.model_type == "cnn"):
-        model = CnnModel(in_dict = input_dict)
+        model = CnnModel(input_dict)
     
     model.load_model(args.model_path)
 

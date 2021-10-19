@@ -30,16 +30,19 @@ class AbstractScikitLearnClassifier(AbstractModel):
         y_pred = input_dict["y_pred"]
         y_pred_proba = input_dict["y_pred_proba"]
         y_test_segmented = input_dict["y_test_segmented"]
+        X_test_segmented = input_dict["X_test_segmented"]
 
         accuracy_A1 = get_accuracy_A1(conf_matrix, total_test_samples)
         accuracy_Ac = get_accuracy_Ac(conf_matrix, y_pred, y_test_segmented)
         accuracy_Ah = get_accuracy_Ah(y_pred_proba, y_test_segmented)
+        accuracy_new_Ah = get_accuracy_new_Ah(y_pred_proba, y_test_segmented, X_test_segmented)
         accuracy_Af = get_accuracy_Af(conf_matrix, total_test_samples)
 
         return {
             "accuracy_A1": accuracy_A1,
             "accuracy_Ac": accuracy_Ac,
             "accuracy_Ah": accuracy_Ah,
+            "accuracy_new_Ah": accuracy_new_Ah,
             "accuracy_Af": accuracy_Af
         }
 
@@ -82,7 +85,8 @@ class AbstractScikitLearnClassifier(AbstractModel):
             "y_pred": y_pred, 
             "y_pred_proba": y_pred_proba,
             "total_test_samples": input_dict["total_test_samples"], 
-            "y_test_segmented": input_dict["testing_segmented"]["labels"]
+            "y_test_segmented": input_dict["testing_segmented"]["labels"],
+            "X_test_segmented": input_dict["testing_segmented"]["data"]
         }
 
         accuracy_metrics_dict = self.compute_accuracy_metrics(input_dict_accuracy_metrics)

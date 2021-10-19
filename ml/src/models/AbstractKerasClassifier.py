@@ -4,17 +4,18 @@ from sklearn.discriminant_analysis import softmax
 from termcolor import colored
 
 
-from keras.models import load_model
-from keras.models import save_model
+from tensorflow.keras.models import load_model
+from tensorflow.keras.models import save_model
 
 from models.AbstractModel import AbstractModel
 from utils.accuracy_utils import *
 
 class AbstractKerasClassifier(AbstractModel):
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, in_dict=None):
+        super().__init__(in_dict)
         self.model = None
+        self.n_classes = 0
 
     def load_model(self, path):
         print(colored(f'\nLoading keras model from {path}\n', "green"))
@@ -22,10 +23,10 @@ class AbstractKerasClassifier(AbstractModel):
 
     def save_model(self, path):
         print(colored(f'\nSaving keras model in {path}.p', "green"))
-        self.model.save(path)
+        self.model.save(f'{path}.p')
 
     def preprocess_input(self, input_dict):
-        None
+        self.n_classes = input_dict["num_classes"]
 
     def compute_accuracy_metrics(self, input_dict) -> dict:
         conf_matrix = input_dict["confusion_matrix"]

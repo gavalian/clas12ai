@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 class AbstractModel(ABC):
 
-    def __init__(self, **kwargs):
+    def __init__(self, in_dict=None):
         super().__init__()
         self.model = None
 
