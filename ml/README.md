@@ -1,4 +1,4 @@
-# Using Artificial Intelligence for Particle Track Identification in the CLAS12 Detecto
+# Using Artificial Intelligence for Particle Track Identification in the CLAS12 Detector
 
 In this project machine learning is used to classify particle tracks from data generated from drift chambers in Jefferson Laboratory CLAS12 detector. The provided script can be used to train different models on pre-classified data and then use the trained models on new data on-line to help with the reconstruction process.
 
