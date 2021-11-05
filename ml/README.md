@@ -99,26 +99,3 @@ python3 ml-cli.py test -e test-set.lsvm -f 6 -m mlp.p --model-type mlp
 ## Datasets
 
 The datasets used for model studies can be found [here](https://userweb.jlab.org/~gavalian/ML/2021/Classifier/) <br>
-
-
-# JLab Machine Learning Project
-This repository contains code pertaining to the ML project for JLab.
-
-# Requirements
-* Anaconda (tested with Python 3.7)
-
-# Installation
-Create a new Anaconda environment using the YML file provided:
-
-`conda env create -f conda_environment.yml`
-
-# Usage
-**Make sure to activate the conda environment.**
-
-Execute `ml-cli.py` under `src/` with the necessary CLI arguments.
-
-To see the available CLI parameters execute `./ml-cli.py -h`
-
-The script makes use of subcommands. 
-
-To get help for the `train` subcommand for example, execute `./ml-cli.py train -h`.
