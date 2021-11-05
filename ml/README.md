@@ -1,6 +1,6 @@
-# CLAS12 Track Denoising Using AutoEncoders
+# Using Artificial Intelligence for Particle Track Identification in the CLAS12 Detecto
 
-In this project machine learning is used to denoise the data generated from drift chambers in Jefferson Laboratory CLAS12 detector. The provided script can be used to train and test AutoEncoder models on "noisy" and "denoised" detector data. The resulting output can be used to more efficiently detect valid tracks in drift chambers.
+In this project machine learning is used to classify particle tracks from data generated from drift chambers in Jefferson Laboratory CLAS12 detector. The provided script can be used to train different models on pre-classified data and then use the trained models on new data on-line to help with the reconstruction process.
 
 
 # Requirements and Installation
