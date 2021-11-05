@@ -15,6 +15,7 @@ from utils.svm_utils import *
 from models.ExtraTreesModel import ExtraTreesModel
 from models.CnnModel import CnnModel
 from models.MlpModel import MlpModel
+from models.GruModel import GruModel
 
 ## Script entry point
 def main():
@@ -45,7 +46,7 @@ def parse_arguments():
     parser_train_required_args.add_argument("--testing-file", "-e", required=True, help="Path to the file containing the testing data.", dest="testing_file_path")
     parser_train_required_args.add_argument("--num-features", "-f", choices=["6", "36", "4032"], required=True, help="Path to the directory containing the testing data.", dest="num_features")
     parser_train_required_args.add_argument("--out-model", "-m", required=True, help="Name of the file in which to save the model.", dest="output_model_path")
-    parser_train_required_args.add_argument("--model-type", choices=["cnn", "mlp", "et"], required=True, help="The type of the model to train.", dest="model_type")
+    parser_train_required_args.add_argument("--model-type", choices=["cnn", "mlp", "et", "rnn"], required=True, help="The type of the model to train.", dest="model_type")
     
     # TODO replace with --model-config
     parser_train_optional_args.add_argument("--epochs", required=False, type=int, default="10", help="How many training epochs to go through.", dest="training_epochs")
@@ -60,7 +61,7 @@ def parse_arguments():
     parser_test_required_args.add_argument("--testing-file", "-e", required=True, help="Path to the file containing the testing data.", dest="testing_file_path")
     parser_test_required_args.add_argument("--num-features", "-f", choices=["6", "36", "4032"], required=True, help="Path to the directory containing the testing data.", dest="num_features")
     parser_test_required_args.add_argument("--model", "-m", required=True, help="The name of the file from which to load the model.", dest="model_path")
-    parser_test_required_args.add_argument("--model-type", choices=["cnn", "mlp", "et"], required=True, help="The type of the model to load.", dest="model_type")
+    parser_test_required_args.add_argument("--model-type", choices=["cnn", "mlp", "et", "rnn"], required=True, help="The type of the model to load.", dest="model_type")
     parser_test_optional_args.add_argument("--batchSize", required=False, type=int, default="16", help="Size of the evaluation batch.", dest="evaluation_batch_size")
 
     # TODO disable predict until we learn about the C interface
@@ -212,6 +213,8 @@ def train_model(args):
             model = MlpModel()
         elif (args.model_type == "cnn"):
             model = CnnModel(input_dict)
+        elif (args.model_type == "rnn"):
+            model = GruModel(input_dict)
 
         model.build_new_model()
         training_dict = model.train(input_dict)
@@ -242,6 +245,8 @@ def test_model(args):
         model = MlpModel()
     elif (args.model_type == "cnn"):
         model = CnnModel(input_dict)
+    elif (args.model_type == "rnn"):
+        model = GruModel(input_dict)
     
     model.load_model(args.model_path)
 
