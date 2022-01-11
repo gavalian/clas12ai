@@ -43,7 +43,13 @@
           <artifactId>jnp-hipo4</artifactId>
           <version>4.1-SNAPSHOT</version>
 	</dependency>
-      
+	
+	<dependency>
+          <groupId>j4np</groupId>
+          <artifactId>j4np-data</artifactId>
+          <version>1.0.2-SNAPSHOT</version>
+	</dependency>
+	
     </dependencies>
 
     <repositories>
